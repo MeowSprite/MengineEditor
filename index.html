@@ -1,0 +1,75 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<script>window.$ = window.jQuery = require('./jquery.js');</script>
+		<script src="app.js"> </script>
+	</head>
+	<style>
+		body{
+			margin: 0;
+			height: 100%;
+		}
+		.container {
+			margin: 0;
+			height: 100%;
+			display: flex;
+		}
+		.nav{
+			width: 180px;
+			overflow-x: hidden;
+			overflow-y: auto;
+			padding-left: 10px;
+		    background: #F5F5F5;
+			border-right: 1px solid #E1E1E1;
+			display: none;
+		}
+		.content {
+			flex: 1;
+			position: relative;
+			height: 100%;
+			overflow:scroll;
+		}
+		.navlist{
+			margin-top: 10px;
+			margin-bottom: 4px;
+		}
+		.nav-button{
+			margin-top: 15px
+		}
+		.bottombar{
+			width: 100%;
+			height: 20px;
+			border-top: 1px solid #E1E1E1;
+		}
+		.drawingboard{
+			margin: 10px 10px 10px 10px;
+		}
+		.drawBox{
+			position: absolute;
+		}
+	</style>
+
+	<body>
+		<div class="container" id="maincontent">
+			<div class="nav" id="new">
+				<div>
+					<p class="navlist">x: </p><input type="text" id="newx" />
+					<p class="navlist">y: </p><input type="text" id="newy" />
+					<p class="navlist">width: </p><input type="text" id="newwidth" />
+					<button type="button" id="newBtn" class="navlist nav-button">创建</button>
+				</div>
+			</div>
+			<main class="content">
+				<div class="drawingboard" id="drawingArea">
+					<canvas id="main" class="drawBox" style="z-index:1;"></canvas>
+					<canvas id="mainline" class="drawBox" style="z-index:2;"></canvas>
+				</div>
+				<img id="tileImg" src="./BasicMap.png" style="display:none" />
+			</main>
+		</div>
+		<div class="bottombar" id="statusbar">
+			鼠标坐标：<span id="curSpan"></span>
+		</div>
+	</body>
+</html>
