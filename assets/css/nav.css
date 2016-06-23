@@ -1,0 +1,23 @@
+.nav{
+    width: 0px;
+    opacity: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-left: 10px;
+    background: #F5F5F5;
+    border-right: 1px solid #E1E1E1;
+}
+
+.nav-show{
+    width: 180px;
+    opacity: 1;
+}
+
+.navlist{
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+.nav-button{
+    margin-top: 15px
+}

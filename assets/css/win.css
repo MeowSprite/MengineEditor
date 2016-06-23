@@ -1,0 +1,14 @@
+.statusbar{
+    width: 100%;
+    height: 20px;
+    border-top: 1px solid #E1E1E1;
+	font-size: 14px;
+}
+.statusbar-item{
+	display: inline-block;
+	height: 100%;
+	vertical-align: top;
+}
+.statusbar-item.right{
+	float: right;
+}

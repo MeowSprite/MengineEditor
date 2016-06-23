@@ -1,0 +1,19 @@
+.container {
+    margin: 0;
+    height: 100%;
+    display: flex;
+}
+
+.content {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    overflow:auto;
+}
+
+.drawingboard{
+    margin: 10px 10px 10px 10px;
+}
+.drawBox{
+    position: absolute;
+}

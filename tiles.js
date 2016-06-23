@@ -18,6 +18,10 @@ function drawVirtualLine(context, x, y, width){
     context.closePath();
 }
 
+function clearVirtualLine(context, width, height){
+    context.clearRect(0,0,width,height);
+}
+
 let selRect;
 
 function selectedRect(context, img, tilewidth){
@@ -80,9 +84,9 @@ function mouseListen(){
     var tileDownY = -1;
     var tileMove = false;
 
-    $("#tileBox").mousedown(function (e) { 
-        var mx = e.pageX - $("#tileBox").offset().left;
-        var my = e.pageY - $("#tileBox").offset().top;
+    $("#mainline").mousedown(function (e) { 
+        var mx = e.pageX - $("#mainline").offset().left;
+        var my = e.pageY - $("#mainline").offset().top;
         tileDownX= parseInt(mx / selRect.tileWidth);
         tileDownY = parseInt(my / selRect.tileWidth);
         tileMove = true;
@@ -90,9 +94,9 @@ function mouseListen(){
         selRect.select(tileDownX, tileDownY, 1, 1);
     });
 
-    $("#tileBox").mousemove(function(e){
-        var mx = e.pageX - $("#tileBox").offset().left;
-        var my = e.pageY - $("#tileBox").offset().top;
+    $("#mainline").mousemove(function(e){
+        var mx = e.pageX - $("#mainline").offset().left;
+        var my = e.pageY - $("#mainline").offset().top;
         if(!tileMove)
             return;
         grid_num_x= parseInt(mx / selRect.tileWidth);
@@ -119,12 +123,18 @@ function mouseListen(){
         selRect.select(left, top, width, height);
     });
 
-    $("#tileBox").mouseup(function(e){
+    $("#mainline").mouseup(function(e){
         tileMove = false;
     });
-    $("#tileBox").mouseleave(function(e){
+    $("#mainline").mouseleave(function(e){
         tileMove = false;
     });
+}
+
+function tileForm(){
+    this.img = null;    //定义图片数据
+    this.imgfile = null; //定义图片文件
+    this.tileWidth = 48;    //tiles的宽度
 }
 
 $(function(){
@@ -132,18 +142,49 @@ $(function(){
     console.log("haha"); 
     if(curWin.hasOwnProperty('img')){
         $("#tile").attr("src", curWin.img.toDataURL());
-        var tileCanvas = document.getElementById("tileBox");
+        var img_width = curWin.img.getSize().width;
+        var img_height = curWin.img.getSize().height;
+        $('#imgSize').text('['+img_width + ',' + img_height + ']');
+        var tileCanvas = document.getElementById("main");
         var tilecontext = tileCanvas.getContext("2d");
         var tileimg = document.getElementById("tile");
-        $("#tileBox").attr("width", $("#tile").width());
-		$("#tileBox").attr("height", $("#tile").height());
+        $("#main").attr("width", $("#tile").width());
+		$("#main").attr("height", $("#tile").height());
+        $("#mainline").attr("width", $("#tile").width());
+		$("#mainline").attr("height", $("#tile").height());
         tilecontext.drawImage(tileimg, 0, 0);
         //这个Tile的参数
-        TILEX = 15,
-		TILEY = 3,
-		TILEWIDTH = 48,
-        drawVirtualLine(tilecontext, TILEX, TILEY, TILEWIDTH);
-        selRect = new selectedRect(tilecontext, "tile", TILEWIDTH);
+        var TILEWIDTH = 48;
+        var TILEX = Math.ceil(img_width/TILEWIDTH);
+		var TILEY = Math.ceil(img_height/TILEWIDTH);
+		
+        var lineCanvas = document.getElementById("mainline");
+        var linecontext = lineCanvas.getContext("2d");
+        drawVirtualLine(linecontext, TILEX, TILEY, TILEWIDTH);
+        //selRect = new selectedRect(linecontext, "tile", TILEWIDTH);
         mouseListen();
+        registerEventChanged('tileWidth', function(){
+            let w = $('#tileWidth').val();
+            linecontext.clearRect(0,0,$("#mainline").width(),$("#mainline").height());
+            TILEWIDTH = w;
+            TILEX = Math.ceil(img_width/TILEWIDTH);
+			TILEY = Math.ceil(img_height/TILEWIDTH);
+            console.log("repaint the line", TILEX, TILEY, TILEWIDTH);
+            drawVirtualLine(linecontext, TILEX, TILEY, TILEWIDTH);
+        });
     }
 });
+
+function registerEventChanged(textBoxID, callback){
+    $('#' + textBoxID).change(function (e) { 
+        e.preventDefault();
+        this.hasChanged = true;
+    });
+    $('#' + textBoxID).blur(function (e) { 
+        e.preventDefault();
+        if(this.hasChanged == true){
+            //repaint the line
+            callback();
+        }
+    });
+}

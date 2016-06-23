@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Tiles</title>
+	<link rel="stylesheet" href="assets/css/global.css">
+	<link rel="stylesheet" href="assets/css/nav.css">
+	<link rel="stylesheet" href="assets/css/drawer.css">
+	<link rel="stylesheet" href="assets/css/win.css">
+	<script>window.$ = window.jQuery = require('./jquery.js');</script>
+	<script src="tiles.js"> </script>
+	<script src="win.js"></script>
+</head>
+
+<body>
+	<div class="container" id="maincontent">
+		<div class="nav nav-show" id="proset">
+			<div>
+				<p class="navlist">width: </p>
+				<input type="text" id="tileWidth" />
+			</div>
+		</div>
+		<div class="content">
+			<img id="tile" style="display:none"/>
+			<canvas id="main" class="drawBox" style="z-index:1;"></canvas>
+			<canvas id="mainline" class="drawBox" style="z-index:2;"></canvas>
+		</div>
+	</div>
+
+	<div class="statusbar" id="statusbar">
+		<div class="statusbar-item right">
+			鼠标坐标：<span id="curSpan"></span>
+		</div>
+		<div class="statusbar-item">
+			图像大小：<span id="imgSize"></span>
+		</div>
+	</div>
+</body>
+</html>

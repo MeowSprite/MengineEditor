@@ -15,7 +15,7 @@ function mainForm() {
     const drawer = require ("./drawer.js");
 
     this.init = function() {
-
+        
     }
 
     this.drawInit = function (){
@@ -31,19 +31,15 @@ function mainForm() {
     }
     
     ipc.on('newMap', function(event, msg){
-        $("#new").show();
-    });
-
-    $(window).resize(function () { 
-        $('#maincontent').css('height', $(window).height() - $('#statusbar').outerHeight() + 'px');
-        $('#statusbar').css('top', $(window).height() - $('#statusbar').outerHeight() + 'px');
+        //$("#new").show();
+        navshow();
     });
 
     $(window).keyup(function (e) { 
        //console.log(e);
        switch (e.keyCode) {
            case 27: //esc
-               $("#new").hide();
+                navhide();
                break;
 
            default:
@@ -60,7 +56,7 @@ function mainForm() {
         $('#newx').val("");
         $('#newy').val("");
         $('#newwidth').val("");
-        $("#new").hide();
+        navhide();
         that.drawInit();
     });
     console.log(this);
