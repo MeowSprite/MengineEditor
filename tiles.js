@@ -141,28 +141,101 @@ $(function(){
     var curWin = remote.getCurrentWindow();
     console.log("haha"); 
     if(curWin.hasOwnProperty('img')){
-        $("#tile").attr("src", curWin.img.toDataURL());
+        //处理输入图像
+        $("#maindisplay").attr("src", curWin.img.toDataURL());
         var img_width = curWin.img.getSize().width;
         var img_height = curWin.img.getSize().height;
+        //状态栏信息显示图片大小
         $('#imgSize').text('['+img_width + ',' + img_height + ']');
-        var tileCanvas = document.getElementById("main");
-        var tilecontext = tileCanvas.getContext("2d");
-        var tileimg = document.getElementById("tile");
-        $("#main").attr("width", $("#tile").width());
-		$("#main").attr("height", $("#tile").height());
-        $("#mainline").attr("width", $("#tile").width());
-		$("#mainline").attr("height", $("#tile").height());
-        tilecontext.drawImage(tileimg, 0, 0);
+
         //这个Tile的参数
         var TILEWIDTH = 48;
         var TILEX = Math.ceil(img_width/TILEWIDTH);
 		var TILEY = Math.ceil(img_height/TILEWIDTH);
-		
+
+        //属性内初始化Tile属性
+        $('#tileWidth').val(TILEWIDTH);
+
+        //初始化canvas画布大小
+        $("#main").attr("width", img_width);
+		$("#main").attr("height", img_height);
+        $("#mainline").attr("width", img_width);
+		$("#mainline").attr("height", img_height);
+
+        //初始化canvas图像内容
+        var tileCanvas = document.getElementById("main");
+        var tilecontext = tileCanvas.getContext("2d");
+        var tileimg = document.getElementById("maindisplay");
+        tilecontext.drawImage(tileimg, 0, 0);
         var lineCanvas = document.getElementById("mainline");
         var linecontext = lineCanvas.getContext("2d");
         drawVirtualLine(linecontext, TILEX, TILEY, TILEWIDTH);
+
+        //获得canvas绘图数据，图像display
+        var maindisplaylineData = lineCanvas.toDataURL();
+        $("#maindisplayline").attr("src", maindisplaylineData);
+
+
         //selRect = new selectedRect(linecontext, "tile", TILEWIDTH);
+        //绑定鼠标事件
         mouseListen();
+
+        //缩放属性
+        var scaleIndex = 100;
+        var minScaleIndex = 50;
+        var maxScaleIndex = 250;
+        var scaleSpeed = 2;
+        var scaleOpacity = $("#scaleController").css("opacity");
+        //初始化悬浮滑块控件
+        $("#scaleIndicator").attr("min", minScaleIndex);
+        $("#scaleIndicator").attr("max", maxScaleIndex);
+        $("#scaleIndicator").val(scaleIndex);
+        $("#scaleController").mouseover(function () {
+            $("#scaleController").stop();
+            $("#scaleController").css("opacity", scaleOpacity);
+            $("#scaleController").show();
+        });
+        $("#scaleController").mouseout(function () { 
+            $("#scaleController").fadeOut(3000);
+        });
+        //绑定滑块调整事件
+        $("#scaleIndicator").on("input change", function() {
+            scaleIndex = parseInt($('#scaleIndicator').val());
+            scaleDisplay();
+        });
+        //缩放函数调整函数
+        function scaleDisplay(){
+            console.log('scale indicator: ', scaleIndex);
+            if(scaleIndex > maxScaleIndex){
+                scaleIndex = maxScaleIndex;
+            } else if(scaleIndex < minScaleIndex){
+                scaleIndex = minScaleIndex;
+            }
+            $('#scaleIndex').text(scaleIndex + '%');
+            $(".drawdisplay").attr("width", img_width * scaleIndex / 100);
+            $(".drawdisplay").attr("height", img_height * scaleIndex / 100);
+            $("#scaleIndicator").val(scaleIndex);
+        }
+        //状态栏显示缩放比例
+        $('#scaleIndex').text(scaleIndex + '%');
+        //主界面绑定滚轮事件,通过jquery第三方库绑定的
+        $("#drawContent").bind('mousewheel', function(event, delta, deltaX, deltaY){
+            if(delta < 0 && scaleIndex > minScaleIndex){
+                scaleIndex -= scaleSpeed;
+                scaleDisplay();
+            }
+            else if(delta > 0 && scaleIndex < maxScaleIndex){
+                console.log('oldscaleIndex: ', scaleIndex);
+                scaleIndex += scaleSpeed;
+                scaleDisplay();
+            }
+            $("#scaleController").stop();
+            $("#scaleController").css("opacity", scaleOpacity);
+            $("#scaleController").show();
+            $("#scaleController").fadeOut(3000);
+        });
+
+        //nav内容处理事件
         registerEventChanged('tileWidth', function(){
             let w = $('#tileWidth').val();
             linecontext.clearRect(0,0,$("#mainline").width(),$("#mainline").height());
@@ -171,6 +244,15 @@ $(function(){
 			TILEY = Math.ceil(img_height/TILEWIDTH);
             console.log("repaint the line", TILEX, TILEY, TILEWIDTH);
             drawVirtualLine(linecontext, TILEX, TILEY, TILEWIDTH);
+            maindisplaylineData = lineCanvas.toDataURL();
+            $("#maindisplayline").attr("src", maindisplaylineData);
+        });
+
+        //状态栏事件绑定
+        $('#scaletray').click(function (e) { 
+            e.preventDefault();
+            scaleIndex = 100;
+            scaleDisplay();
         });
     }
 });

@@ -16,4 +16,9 @@
 }
 .drawBox{
     position: absolute;
+    display: none;
+}
+
+.drawdisplay{
+    position: absolute;
 }

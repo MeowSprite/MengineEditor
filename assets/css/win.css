@@ -8,7 +8,39 @@
 	display: inline-block;
 	height: 100%;
 	vertical-align: top;
+	border-left: 1px solid #E1E1E1;
+	border-right: 1px solid #E1E1E1;
+	padding-right: 15px;
+}
+.statusbar-item:hover{
+	background: lightblue
 }
 .statusbar-item.right{
 	float: right;
+}
+
+.floatcontroler{
+	position: absolute;
+}
+
+.floatcontroler.right{
+	right: 40px;
+	top: 20px;
+}
+
+.slidercontrol{
+	border: 2px solid #a1a1a1;
+    border-radius: 25px;
+    background: #989898;
+    opacity: 0.75;
+}
+
+.slidercontrol .slider{
+	width: 8px;
+    height: 175px;
+	-webkit-appearance: slider-vertical;
+}
+
+.noshow{
+	display: none;
 }

@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="assets/css/drawer.css">
 	<link rel="stylesheet" href="assets/css/win.css">
 	<script>window.$ = window.jQuery = require('./jquery.js');</script>
+	<script src="jquery.mousewheel.min.js"></script>
 	<script src="tiles.js"> </script>
 	<script src="win.js"></script>
 </head>
@@ -20,20 +21,25 @@
 				<input type="text" id="tileWidth" />
 			</div>
 		</div>
-		<div class="content">
-			<img id="tile" style="display:none"/>
-			<canvas id="main" class="drawBox" style="z-index:1;"></canvas>
-			<canvas id="mainline" class="drawBox" style="z-index:2;"></canvas>
+		<div class="content" id="drawContent">
+			<div>
+				<canvas id="main" class="drawBox"></canvas>
+				<canvas id="mainline" class="drawBox"></canvas>
+				<img id="maindisplay" class="drawdisplay" draggable="false"/>
+				<img id="maindisplayline" class="drawdisplay" draggable="false"/>				
+			</div>
+		</div>
+		<div class="floatcontroler right">
+			<div class="slidercontrol noshow"  id="scaleController">
+				<input id="scaleIndicator" class="slider" type="range" name="scale" min="0" max="500">
+			</div>
 		</div>
 	</div>
 
 	<div class="statusbar" id="statusbar">
-		<div class="statusbar-item right">
-			鼠标坐标：<span id="curSpan"></span>
-		</div>
-		<div class="statusbar-item">
-			图像大小：<span id="imgSize"></span>
-		</div>
+		<div class="statusbar-item right">鼠标坐标：<span id="curSpan"></span></div
+		><div class="statusbar-item">图像大小：<span id="imgSize"></span></div
+		><div class="statusbar-item" id="scaletray">缩放比例：<span id="scaleIndex"></span></div>
 	</div>
 </body>
 </html>
