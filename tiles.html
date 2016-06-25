@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="assets/css/nav.css">
 	<link rel="stylesheet" href="assets/css/drawer.css">
 	<link rel="stylesheet" href="assets/css/win.css">
+	<link rel="stylesheet" href="assets/css/third/toggle-switch.css">
 	<script>window.$ = window.jQuery = require('./jquery.js');</script>
 	<script src="jquery.mousewheel.min.js"></script>
 	<script src="tiles.js"> </script>
@@ -16,9 +17,26 @@
 <body>
 	<div class="container" id="maincontent">
 		<div class="nav nav-show" id="proset">
-			<div>
-				<p class="navlist">width: </p>
+			<div class="nav-item">
+				<p class="navlist">宽度: </p>
 				<input type="text" id="tileWidth" />
+			</div>
+			<div class="nav-item switch">
+				<label class="switch-light switch-material" onclick="">
+					<input type="checkbox" id="blockMode">
+					<strong>
+						Block编辑：
+					</strong>
+					<span>
+						<span>开</span>
+						<span>关</span>
+						<a></a>
+					</span>
+				</label>
+			</div>
+			<div class="nav-item">
+				<p class="navlist">子块数量: </p>
+				<input type="text" id="blockNum"/>
 			</div>
 		</div>
 		<div class="content" id="drawContent">
@@ -37,7 +55,8 @@
 	</div>
 
 	<div class="statusbar" id="statusbar">
-		<div class="statusbar-item right">鼠标坐标：<span id="curSpan"></span></div
+		<div class="statusbar-item right">鼠标坐标：<span id="cursorCoordinate"></span></div
+		><div class="statusbar-item right">选择的窗体：<span id="selectRect"></span></div
 		><div class="statusbar-item">图像大小：<span id="imgSize"></span></div
 		><div class="statusbar-item" id="scaletray">缩放比例：<span id="scaleIndex"></span></div>
 	</div>

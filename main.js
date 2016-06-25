@@ -11,9 +11,11 @@ const Menu = electron.Menu;
 
 const MenuItem = electron.MenuItem;
 
-const Dialog = require('electron').dialog;
+const Dialog = electron.dialog;
 
-const nativeImage = require('electron').nativeImage;
+const nativeImage = electron.nativeImage;
+
+const ipc = electron.ipcMain;
 
 var template = [
   {
@@ -45,6 +47,7 @@ var template = [
                   newTileWin.winID = filename;
                   newTileWin.file = filelist[i]; //将参数传送进去
                   newTileWin.img = img;
+				  newTileWin.mainWinID = winContainer[0].id;
                   newTileWin.imgData = img.toDataURL();
                   newTileWin.webContents.openDevTools();
                   //其实windows有自己的唯一ID，但是我们需要判断打开的文件是否已打开，所以就用文件名当ID了

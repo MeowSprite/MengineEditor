@@ -21,3 +21,13 @@
 .nav-button{
     margin-top: 15px
 }
+
+.nav>.nav-item{
+    padding-bottom: 10px;
+    border-bottom: 1px solid #E1E1E1;
+}
+
+.nav>.switch{
+    padding-top: 10px;
+    padding-bottom: 12px;
+}

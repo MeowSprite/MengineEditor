@@ -35,6 +35,10 @@ function mainForm() {
         navshow();
     });
 
+    ipc.on('tile-selected', function(event, selData){
+        console.log(event, selData);
+    });
+
     $(window).keyup(function (e) { 
        //console.log(e);
        switch (e.keyCode) {
