@@ -27,6 +27,10 @@
     border-bottom: 1px solid #E1E1E1;
 }
 
+.nav>.nav-item.hide-item{
+    display: none;
+}
+
 .nav>.switch{
     padding-top: 10px;
     padding-bottom: 12px;

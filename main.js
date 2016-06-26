@@ -44,16 +44,16 @@ var template = [
                   var size = img.getSize();
                   var newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65,title:filename, autoHideMenuBar:true});
                   newTileWin.loadURL('file://' + __dirname + '/tiles.html');
-                  newTileWin.winID = filename;
+                  newTileWin.filename = filename;
                   newTileWin.file = filelist[i]; //将参数传送进去
                   newTileWin.img = img;
-				  newTileWin.mainWinID = winContainer[0].id;
+				          newTileWin.mainWinID = winContainer[0].id;
                   newTileWin.imgData = img.toDataURL();
                   newTileWin.webContents.openDevTools();
                   //其实windows有自己的唯一ID，但是我们需要判断打开的文件是否已打开，所以就用文件名当ID了
                   winContainer[filename] = newTileWin;
                   newTileWin.on('closed', function() {
-                    delete winContainer[this.winID];
+                    delete winContainer[this.filename];
                   });
                 }
               }
