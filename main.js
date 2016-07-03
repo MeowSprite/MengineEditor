@@ -17,6 +17,8 @@ const nativeImage = electron.nativeImage;
 
 const ipc = electron.ipcMain;
 
+const fs = require('fs');
+
 var template = [
   {
     label: '文件',
@@ -38,24 +40,9 @@ var template = [
             function(filelist){
               //focusedWindow.webContents.send('loadTileFile', fileName);
               for(var i in filelist){
-                var filename = filelist[i].substr(filelist[i].lastIndexOf('\\')+1);
-                if(!winContainer.hasOwnProperty(filename)){
-                  var img = nativeImage.createFromPath(filelist[i]);
-                  var size = img.getSize();
-                  var newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65,title:filename, autoHideMenuBar:true});
-                  newTileWin.loadURL('file://' + __dirname + '/tiles.html');
-                  newTileWin.filename = filename;
-                  newTileWin.file = filelist[i]; //将参数传送进去
-                  newTileWin.img = img;
-				          newTileWin.mainWinID = winContainer[0].id;
-                  newTileWin.imgData = img.toDataURL();
-                  newTileWin.webContents.openDevTools();
-                  //其实windows有自己的唯一ID，但是我们需要判断打开的文件是否已打开，所以就用文件名当ID了
-                  winContainer[filename] = newTileWin;
-                  newTileWin.on('closed', function() {
-                    delete winContainer[this.filename];
-                  });
-                }
+                let tilewin = createTileWindow(filelist[i]);
+                if(tilewin != null)
+                  winContainer[0].webContents.send('addTile', tilewin);
               }
             }
           );
@@ -78,10 +65,76 @@ var template = [
   },
 ];
 
+
+var tileMenu = [
+  {
+    label: '文件',
+    submenu: [
+      {
+        label: '保存',
+        click: function(item, focusedWindow){
+          focusedWindow.webContents.send('save');
+        }
+      }
+    ]
+  },
+];
+
+let tilemenu = Menu.buildFromTemplate(tileMenu);
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 //let mainWindow;
 let winContainer = {};
+
+ipc.on('tile-save', function(event, filename, tileData){
+  let win = winContainer[filename];
+  //let jsonfilepath = win.filedir + win.filename + '.json';
+  let fd = fs.openSync(win.datafile, 'w');
+  fs.writeSync(fd, JSON.stringify(tileData));
+  fs.closeSync(fd);
+  Dialog.showMessageBox(win, {
+    type: "info",
+    buttons: ["确定"],
+    title: "保存",
+    message: "保存成功，保存路径：" + win.datafile,
+  });
+});
+
+ipc.on('opentile', function(event, filepath){
+  createTileWindow(filepath);
+});
+
+function createTileWindow(filepath){
+  let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
+  let filedir = filepath.substr(0, filepath.lastIndexOf('\\') + 1);
+  let newTileWin = null;
+  if(!winContainer.hasOwnProperty(filename)){
+    let img = nativeImage.createFromPath(filepath);
+    let size = img.getSize();
+    newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65,title:filename});
+    newTileWin.setMenu(tilemenu);
+    newTileWin.loadURL('file://' + __dirname + '/tiles.html');
+    newTileWin.filename = filename;
+    newTileWin.file = filepath; //将参数传送进去
+    newTileWin.datafile = newTileWin.file + '.json';
+    newTileWin.tiledata = "";
+    if(fs.existsSync(newTileWin.datafile)){
+      newTileWin.tiledata = fs.readFileSync(newTileWin.datafile, 'utf8');
+    }
+    newTileWin.img = img;
+    newTileWin.mainWinID = winContainer[0].id;
+    newTileWin.imgData = img.toDataURL();
+    newTileWin.webContents.openDevTools();
+    //其实windows有自己的唯一ID，但是我们需要判断打开的文件是否已打开，所以就用文件名当ID了
+    winContainer[filename] = newTileWin;
+    newTileWin.on('closed', function() {
+      delete winContainer[this.filename];
+    });
+  } else{
+    winContainer[filename].focus();
+  }
+  return newTileWin;
+}
 
 function createWindow () {
   // Create the browser window.

@@ -1,5 +1,6 @@
 body{
     margin: 0;
+    -webkit-user-select: none;
     height: 100%;
     font-family: Segoe WPC,Segoe UI,SFUIText-Light,HelveticaNeue-Light,Noto Sans,Microsoft YaHei,PingFang SC,Hiragino Sans GB,Source Han Sans SC,Source Han Sans CN,Source Han Sans,sans-serif;
 }

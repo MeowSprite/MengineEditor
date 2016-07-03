@@ -8,8 +8,8 @@ var MTile = {
     imgHeight: 0,
     TileX : 0, //图像切块
     TileY : 0,
-    TileWidth : 0,  //图像需要支持长方形吗
-    subBlocks : 0,   //如果图像只是正方形，那这样就可以
+    TileWidth : 48,  //图像需要支持长方形吗
+    subBlocks : 4,   //如果图像只是正方形，那这样就可以
     tiles : []  //块
 };
 
@@ -24,7 +24,13 @@ $(function(){
     if(!curWin.hasOwnProperty('img')){
         return;
     }
-
+    ipc.on('save', function(event, msg){
+        //$("#new").show();
+        ipc.send('tile-save', curWin.filename, MTile);
+    });
+    if(curWin.tiledata !== ""){
+        MTile = JSON.parse(curWin.tiledata);
+    }
     var filePath = curWin.file;
     //首先需要加载已有的内容
     MTile.file = curWin.filename;
@@ -38,7 +44,7 @@ $(function(){
     $('#imgSize').text('['+MTile.imgWidth + ', ' + MTile.imgHeight + ']');
 
     //这个Tile的参数
-    MTile.TileWidth = 48;
+    //MTile.TileWidth = 48;
     MTile.TileX = Math.ceil(MTile.imgWidth/MTile.TileWidth);
     MTile.TileY = Math.ceil(MTile.imgHeight/MTile.TileWidth);
 
@@ -149,8 +155,10 @@ $(function(){
 
     //编辑Block模式
     var isBlockOpen = false;
-    MTile.subBlocks = 4;
-    initTiles();
+    //MTile.subBlocks = 4;
+    if(curWin.tiledata === ""){
+        initTiles();
+    }
     $('#blockNum').val(MTile.subBlocks);
     registerEventChanged('blockNum', function(){
         MTile.subBlocks = $('#blockNum').val();

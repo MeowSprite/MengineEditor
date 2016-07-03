@@ -35,3 +35,13 @@
     padding-top: 10px;
     padding-bottom: 12px;
 }
+
+.proset{
+    width: 0px;
+    opacity: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #F5F5F5;
+    border-left: 1px solid #E1E1E1;
+    padding-left: 10px;
+}

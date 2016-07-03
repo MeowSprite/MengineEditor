@@ -45,3 +45,40 @@
 .noshow{
 	display: none;
 }
+
+.list{
+	height: 100px;
+	width: 95%;
+	overflow-x: hidden;
+	overflow-y:auto;
+	border: 1px solid darkgrey;
+	background: white;
+}
+
+.list-item{
+	width: 100%;
+	border-bottom: 1px solid #e1e1e1;
+}
+
+.list-item:hover{
+	background: #c5c5c5;
+}
+
+.list-item>span{
+	margin-right: 5px;
+	border-right: 1px solid #e1e1e1;
+}
+
+.list-item>span>img{
+    width: 16px;
+    vertical-align: bottom;
+    padding-bottom: 2px;
+}
+
+
+
+.list-item.right{
+	display: inline-block;
+	height: 100%;
+	vertical-align: top;
+}

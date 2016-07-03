@@ -23,11 +23,26 @@
 		</div>
 		<main class="content">
 			<div class="drawingboard" id="drawingArea">
-				<canvas id="main" class="drawBox" style="z-index:1;"></canvas>
-				<canvas id="mainline" class="drawBox" style="z-index:2;"></canvas>
+				<canvas id="main" class="drawBox""></canvas>
+				<canvas id="mainline" class="drawBox""></canvas>
+				<img id="maindisplay" class="drawdisplay" draggable="false"/>
+				<img id="maindisplayline" class="drawdisplay" draggable="false"/>	
 			</div>
 			<img id="tileImg" src="./BasicMap.png" style="display:none" />
 		</main>
+		<div class="proset">
+			<div>
+				<p class="navlist">x: </p><input type="text" />
+				<p class="navlist">y: </p><input type="text" />
+				<p class="navlist">width: </p><input type="text" />
+				<p class="navlist">tile list:</p>
+				<div class="list" id="tilelist">
+					<div class="list-item">
+						<span><img src="assets/img/close.png"></span><i>hahaha.png</i>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 	<div class="statusbar" id="statusbar">
 		鼠标坐标：<span id="curSpan"></span>

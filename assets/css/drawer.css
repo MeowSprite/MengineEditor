@@ -11,9 +11,6 @@
     overflow:auto;
 }
 
-.drawingboard{
-    margin: 10px 10px 10px 10px;
-}
 .drawBox{
     position: absolute;
     display: none;

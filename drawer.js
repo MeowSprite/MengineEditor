@@ -1,8 +1,15 @@
-exports.drawVirtualLine = function(context, x, y, width){
+exports.drawVirtualLine = function(context, x, y, width, isdash){
     context.beginPath();
+    if(isdash){
+        context.setLineDash([3, 1]);
+        context.lineWidth = 1.0;
+    } else{
+        context.setLineDash([1, 0]);
+        context.lineWidth = 2.0;
+    }
     context.strokeStyle = "#000000";
-    context.lineWidth = 2.0;
-    let i;
+    
+    var i;
     for(i = 0; i <= x ; i+=1){
         context.moveTo(i * width, 0);
         context.lineTo(i * width, y * width);
@@ -13,7 +20,7 @@ exports.drawVirtualLine = function(context, x, y, width){
     }
     context.stroke();
     context.closePath();
-};
+}
 
 function drawRect(context){
     var ctx = context;
