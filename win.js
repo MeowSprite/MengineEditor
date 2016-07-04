@@ -63,3 +63,13 @@ function putListTextArg(item, key, value){
 function addListIconFunc(item, func){
     item.children("span").children("img").click(func);
 }
+
+function newListItemLayers(name, icon, icon2){
+    let item = $('<div class="list-item layer-item" draggable="true" ondragover="listAllowDrop(event)"><span class="list-left layer-close"><img src="assets/img/close.png"></span><i class="dblclick-change-label">' + name + '</i><input class="list-input" type="text" value="' + name + '"><span class="list-right layer-visible"><img src="assets/img/eye.png"></span></div>');
+    //icon && icon2 用来以后备用。
+    return item;
+}
+
+function listAllowDrop(event){
+    event.preventDefault();
+}

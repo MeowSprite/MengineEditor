@@ -104,6 +104,12 @@ ipc.on('opentile', function(event, filepath){
   createTileWindow(filepath);
 });
 
+ipc.on('deletetile', function(event, filename){
+  if(winContainer.hasOwnProperty(filename)){
+    winContainer[filename].close();
+  }
+});
+
 function createTileWindow(filepath){
   let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
   let filedir = filepath.substr(0, filepath.lastIndexOf('\\') + 1);

@@ -377,6 +377,7 @@ $(function(){
         selData.right = r;
         selData.bottom = b;
         selData.tileWidth = MTile.TileWidth;
+        selData.filename = MTile.file;
         mainWin.webContents.send('tile-selected', selData);
     }
 });
