@@ -376,6 +376,15 @@ $(function(){
         selData.top = t;
         selData.right = r;
         selData.bottom = b;
+        selData.blocksID = [];
+        for(let i = 0; i < selData.bottom; i++){
+            let blockIDx = [];
+            for(let j = 0; j < selData.right; j++){
+                let id = (i + selData.top) * MTile.TileX + j + selData.left;
+                blockIDx.push(id);
+            }
+            selData.blocksID.push(blockIDx);
+        }
         selData.tileWidth = MTile.TileWidth;
         selData.filename = MTile.file;
         mainWin.webContents.send('tile-selected', selData);

@@ -1,24 +1,39 @@
 const ipc = require('electron').ipcRenderer;
 const remote = require('electron').remote;
 
-var Tiles = [];
 var Tile = {
     file : "",
     datafile : "",
     tiledata : "",
     imgdata : "",
+    tileID : 0,
     MTile : {}
 };
+
+TileIdIndex = [];   //Tile名字到Id的索引
+//Layer里的每个Tile记号，最后一个数字表示所属的TileID，其他数字表名Tile内的块ID
+
 var Map = {
+    tileMaxNum : 10,    //最大tilefile的数量，这个必须是10的倍数。
     tileX : 0,
     tileY : 0,
     tileWidth : 0,
-    layer : []
+    tileBlockNum : 0,
+    Tiles : [],
+    layers : {},    //layers具体存的数据
+    layerIndex : []     //用于指明layer的层次关系
 };
 
-
-var layer = {};
-var layerName = [];
+/*一个layer用一个二维数组表示
+var layer = [
+    [],
+    [],
+];
+var layers = {
+    layername : layer,
+    layername : layer,
+};
+*/
 
 var selectData = null;
 
@@ -68,6 +83,7 @@ $(document).ready(function () {
     });
     ipc.on('tile-selected', function(event, selData){
         selectData = selData;
+        selectData.tileID = TileIdIndex[selectData.filename];
         selectData.srcX = selData.left * selData.tileWidth;
         selectData.srcY = selData.top * selData.tileWidth;
         selectData.srcW = selData.right* selData.tileWidth;
@@ -77,14 +93,22 @@ $(document).ready(function () {
 
     ipc.on('addTile', function(event, tileData){
         let item = newListItem(tileData.filename);
-        let tile = [];
+        let tile = {};
         tile.file = tileData.file;
         tile.datafile = tileData.datafile;
-        tile.tiledata = tileData.tiledata;
+        //tile.tiledata = tileData.tiledata;
         tile.imgdata = tileData.imgData;
-        tile.MTile = JSON.parse(tile.tiledata);
+        tile.MTile = JSON.parse(tileData.tiledata);
         tileImg(tileData.filename, tile.imgdata);
-        Tiles[tileData.filename] = tile;
+        //为Tile分配一个ID，以便在layer标记
+        tile.tileID = Map.Tiles.length;
+        //更新总Tile块数目
+        tile.blockNum = tile.MTile.TileX * tile.MTile.TileY;
+        Map.tileBlockNum += tile.blockNum;
+        TileIdIndex[tileData.filename] = tile.tileID;
+        Map.Tiles.push(tile);
+
+        //初始化函数
         putListTextArg(item, 'filepath', tileData.file);
         addListTextFunc(item, function(){
             ipc.send('opentile', $(this).attr('filepath'));
@@ -94,7 +118,7 @@ $(document).ready(function () {
             if(res == true){
                 let filename = $(this).parent().siblings("i").text();
                 ipc.send('deletetile', filename);
-                delete Tiles[filename];
+                delete Map.Tiles[filename];
                 $(this).parent().parent().remove();
             }
         });
@@ -112,14 +136,6 @@ $(document).ready(function () {
                break;
        }
     });
-    //For Test
-    Map.tileX = 20;
-    Map.tileY = 20;
-    Map.tileWidth = 48;
-    navhide();
-    drawInit();
-    prosetshow();
-    //-------
 
     $('#newBtn').click(function(e){
         e.preventDefault();
@@ -138,18 +154,21 @@ $(document).ready(function () {
         e.preventDefault();
         console.log("new layer add");
         let id = 1;
-        while($.inArray('Layer' + id, layerName) != -1){
+        while($.inArray('Layer' + id, Map.layerIndex) != -1){
             id += 1;
         }
-        layerName.push('Layer' + id);
+        Map.layerIndex.push('Layer' + id);
         let item = newListItemLayers('Layer' + id);
         item.attr("id", 'Layer' + id);
         //插入layer list
         $(this).before(item);
         //创建新的Drawer
         newDrawer('Layer' + id);
+        //创建新的Layer插入工程数据中
+        let newlayer = newLayer();
+        Map.layers['Layer' + id] = newlayer;
 
-        if(layerName.length == 1){
+        if(Map.layerIndex.length == 1){
             let canvasName = getDrawerIdFromLayer('Layer' + id);
             let displayName = getDisplayIdFromLayer('Layer' + id);
             curDrawer = document.getElementById(canvasName);
@@ -176,24 +195,28 @@ $(document).ready(function () {
             let layerid = event.dataTransfer.getData("layername");
             let layer = $('#' + layerid)
             //Todo：交换Display显示
-
+            let displayid = getDisplayIdFromLayer(layerid);
+            let thisdisplayid = getDisplayIdFromLayer($(this).attr("id"));
+            
             //for better drag
             let layerDragedDeep = $("#layerlist .layer-item").index(this);
             let layerDropedDeep = $("#layerlist .layer-item").index(layer);
             if(layerDragedDeep > layerDropedDeep){
-                layer.before($(this));
+                $(this).after(layer);
+                $('#' + thisdisplayid).after($('#' + displayid));
             } else if(layerDragedDeep < layerDropedDeep){
-                layer.after($(this));
+                $(this).before(layer);
+                $('#' + thisdisplayid).before($('#' + displayid));
             } else{
                 return;
             }
 
             //generate new layerlist
-            layerName = [];
+            Map.layerIndex = [];
             $(this).parent().children(".layer-item").each(function(){
-                layerName.push($(this).attr("id"));
+                Map.layerIndex.push($(this).attr("id"));
             });
-            console.log(layerName);
+            console.log(Map.layerIndex);
         };
 
         item.children("span.layer-close").click(function(e){
@@ -203,7 +226,7 @@ $(document).ready(function () {
             if(res == true){
                 //删除Layer
                 let name = $(this).siblings("i").text();
-                layerName.splice($.inArray(name,layerName),1);
+                Map.layerIndex.splice($.inArray(name,Map.layerIndex),1);
                 //
                 $(this).parent().remove();
             }
@@ -234,13 +257,20 @@ $(document).ready(function () {
             e.preventDefault();
             let itext = $(this).siblings("i");
             //如果没有重名的话就修改名称
-            if($.inArray($(this).val(), layerName) == -1){
-                let index = $.inArray(itext.text(), layerName);
-                layerName[index] = $(this).val();
+            if($.inArray($(this).val(), Map.layerIndex) == -1){
+                let index = $.inArray(itext.text(), Map.layerIndex);
+                //修改Map里layer数据里的内容
+                let layer = Map.layers[Map.layerIndex[index]];   //获得原来的Layers
+                delete Map.layers[Map.layerIndex[index]];
+                Map.layers[$(this).val()] = layer;
+
+                Map.layerIndex[index] = $(this).val();
                 itext.text($(this).val());
                 $(this).parent().attr("id", $(this).val());
                 //Todo：修改Drawer的ID
                 setDrawerId($(this).val());
+                //修改Layer相关的数据
+
             }
             $(this).parent().attr("draggable", true);
             itext.show();
@@ -273,6 +303,18 @@ $(document).ready(function () {
         $('#' + curDisplayID).attr('id', getDisplayIdFromLayer(newname));
         curDrawerID = getDrawerIdFromLayer(newname);
         curDisplayID = getDisplayIdFromLayer(newname);
+    }
+
+    function newLayer(){
+        let layer = [];
+        for(let i = 0; i < Map.tileY; i++){
+            let layerx = [];
+            for(let j = 0; j < Map.tileY; j++){
+                layerx.push(0);
+            }
+            layer.push(layerx);
+        }
+        return layer;
     }
 
     function newDrawer(name){
@@ -311,6 +353,21 @@ $(document).ready(function () {
         $("#"+curDisplayID).attr("src", curDrawerImg);
     }
 
+    function drawToLayerData(drawPoint){
+        //Todo：保存Layer绘制Data
+        let w = selectData.right;
+        let h = selectData.bottom;
+        for(let i = 0; i < h; i++){
+            for(let j = 0; j < w; j++){
+                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j];
+            }
+        }
+    }
+
+    function drawBlock(){
+
+    }
+
     function draw(drawPoint){
         if(selectData === null || $('#' + curDisplayID).children("img").css('visibility') == "hidden"){
             return;
@@ -325,6 +382,7 @@ $(document).ready(function () {
                             selectData.srcW, selectData.srcH,
                             dstX, dstY,
                             dstW, dstH);
+        drawToLayerData(drawPoint);
         console.log(img,
                     selectData.srcX, selectData.srcY,
                     selectData.srcW, selectData.srcH,
@@ -391,4 +449,13 @@ $(document).ready(function () {
             $('#cursorCoordinate').text('['+grid_num_x + ', ' + grid_num_y + ']');
         });
     }
+
+    //For Test
+    Map.tileX = 20;
+    Map.tileY = 20;
+    Map.tileWidth = 48;
+    navhide();
+    drawInit();
+    prosetshow();
+    //-------
 });
