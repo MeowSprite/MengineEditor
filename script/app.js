@@ -46,7 +46,7 @@ var curLayer = "";
 $(document).ready(function () {
     //var main = new mainForm();
     let curWin = remote.getCurrentWindow();
-    const drawer = require ("./drawer.js");
+    const drawer = require ("./script/drawer.js");
     //初始化工程内容
 
     var lineCanvas = document.getElementById("mainline");
