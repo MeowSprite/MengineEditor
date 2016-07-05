@@ -12,7 +12,5 @@
 		"jspm_packages",
 		"tmp",
 		"temp",
-        "main -*",
-        "my.js"
 	]
 }

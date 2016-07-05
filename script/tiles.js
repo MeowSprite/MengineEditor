@@ -291,7 +291,6 @@ $(function(){
                     setBlocks(tileid, blockid, 1);
                 }
             }
-
         });
 
         $("#maindisplayline").mousemove(function(e){
@@ -361,7 +360,7 @@ $(function(){
                     }
                 }                
             }
-    });
+        });
 
         $("#maindisplayline").mouseup(function(e){
             tileMove = false;
@@ -389,6 +388,18 @@ $(function(){
         selData.filename = MTile.file;
         mainWin.webContents.send('tile-selected', selData);
     }
+    if(curWin.tiledata === ""){
+        ipc.send('tile-save', curWin.filename, MTile, true);
+    }
+    //curWin.MTile = MTile;
+    //console.log(curWin);
+    let tileData = {};
+    tileData.file = curWin.file;
+    tileData.filename = curWin.filename;
+    tileData.datafile = curWin.file + '.json';
+    tileData.imgData = curWin.imgData;
+    tileData.MTile = MTile;
+    mainWin.webContents.send('addTile', tileData);
 });
 
 function registerEventChanged(textBoxID, callback){

@@ -19,6 +19,8 @@ const ipc = electron.ipcMain;
 
 const fs = require('fs');
 
+const iconFile = __dirname + "/assets/icon/m.ico";
+
 var template = [
   {
     label: '文件',
@@ -34,15 +36,15 @@ var template = [
         click: function(item, focusedWindow) {
           Dialog.showOpenDialog( 
             {
-              filter:[ { name: 'Images', extensions: ['jpg', 'png', 'gif'] } ],
+              filters:[ { name: 'Images', extensions: ['png'] } ],
               properties : ['openFile']
             },
             function(filelist){
               //focusedWindow.webContents.send('loadTileFile', fileName);
               for(var i in filelist){
                 let tilewin = createTileWindow(filelist[i]);
-                if(tilewin != null)
-                  winContainer[0].webContents.send('addTile', tilewin);
+                //if(tilewin != null)
+                //  winContainer[0].webContents.send('addTile', tilewin);
               }
             }
           );
@@ -86,12 +88,14 @@ let tilemenu = Menu.buildFromTemplate(tileMenu);
 //let mainWindow;
 let winContainer = {};
 
-ipc.on('tile-save', function(event, filename, tileData){
+ipc.on('tile-save', function(event, filename, tileData, noMsgBox){
   let win = winContainer[filename];
   //let jsonfilepath = win.filedir + win.filename + '.json';
   let fd = fs.openSync(win.datafile, 'w');
   fs.writeSync(fd, JSON.stringify(tileData));
   fs.closeSync(fd);
+  if(noMsgBox)
+    return;
   Dialog.showMessageBox(win, {
     type: "info",
     buttons: ["确定"],
@@ -117,7 +121,11 @@ function createTileWindow(filepath){
   if(!winContainer.hasOwnProperty(filename)){
     let img = nativeImage.createFromPath(filepath);
     let size = img.getSize();
-    newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65,title:filename});
+    if(size.width == 0 && size.height == 0){
+      console.log("Open Tile Error img load");
+      return newTileWin;
+    }
+    newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65, title:filename, icon:iconFile});
     newTileWin.setMenu(tilemenu);
     newTileWin.loadURL('file://' + __dirname + '/tiles.html');
     newTileWin.filename = filename;
@@ -144,7 +152,7 @@ function createTileWindow(filepath){
 
 function createWindow () {
   // Create the browser window.
-  winContainer[0] = new BrowserWindow({width: 800, height: 600});
+  winContainer[0] = new BrowserWindow({width: 800, height: 600, icon:iconFile});
 
   var menu = Menu.buildFromTemplate(template);
 

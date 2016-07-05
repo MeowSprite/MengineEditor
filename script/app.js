@@ -92,13 +92,14 @@ $(document).ready(function () {
     });
 
     ipc.on('addTile', function(event, tileData){
+        console.log(tileData);
         let item = newListItem(tileData.filename);
         let tile = {};
         tile.file = tileData.file;
         tile.datafile = tileData.datafile;
         //tile.tiledata = tileData.tiledata;
         tile.imgdata = tileData.imgData;
-        tile.MTile = JSON.parse(tileData.tiledata);
+        tile.MTile = tileData.MTile;
         tileImg(tileData.filename, tile.imgdata);
         //为Tile分配一个ID，以便在layer标记
         tile.tileID = Map.Tiles.length;
@@ -328,12 +329,12 @@ $(document).ready(function () {
     }
 
     function tileImg(id, imgData){
-        let tileID = "#tile-" + id;
-        if(imgData !== null){
+        let tileID = "tile-" + id;
+        if(imgData){
             //添加id
-            if($(tileID).length > 0){
+            if($('#' + tileID).length > 0){
                 //替换img内容
-                $(tileID).attr('src', imgData);
+                $('#' + tileID).attr('src', imgData);
             }
             else{
                 //添加一个Img
@@ -357,15 +358,22 @@ $(document).ready(function () {
         //Todo：保存Layer绘制Data
         let w = selectData.right;
         let h = selectData.bottom;
+        let tileID = TileIdIndex[selectData.filename];
         for(let i = 0; i < h; i++){
             for(let j = 0; j < w; j++){
-                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j];
+                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j] * 10 + tileID;
             }
         }
     }
 
     function drawBlock(){
 
+    }
+
+    function erase(drawPoint){
+        curDrawerContext.clearRect(drawPoint.x * Map.tileWidth, drawPoint.y * Map.tileWidth, Map.tileWidth, Map.tileWidth);
+        Map.layers[curLayer][drawPoint.y][drawPoint.x] = 0;
+        showDisplay();
     }
 
     function draw(drawPoint){
@@ -383,11 +391,6 @@ $(document).ready(function () {
                             dstX, dstY,
                             dstW, dstH);
         drawToLayerData(drawPoint);
-        console.log(img,
-                    selectData.srcX, selectData.srcY,
-                    selectData.srcW, selectData.srcH,
-                    dstX, dstY,
-                    dstW, dstH);
         showDisplay();
     }
 
@@ -402,17 +405,21 @@ $(document).ready(function () {
         var tileDownY = -1;
         var tileMove = false;
         var point = [];
+        var oldgrid_num = [];
         $("#maindisplayline").mousedown(function (e) {
             let mx = e.pageX - $("#maindisplayline").offset().left;
             let my = e.pageY - $("#maindisplayline").offset().top;
-            grid_num_x = parseInt(mx / (Map.tileWidth * scaleIndex / 100));
-            grid_num_y = parseInt(my / (Map.tileWidth * scaleIndex / 100));
-            tileMove = true;
+            let grid_num_x = parseInt(mx / (Map.tileWidth * scaleIndex / 100));
+            let grid_num_y = parseInt(my / (Map.tileWidth * scaleIndex / 100));
             if(!isBlockOpen){
                 //绘制图形
                 point.x = grid_num_x;
                 point.y = grid_num_y;
-                draw(point);
+                if(e.which == 1){
+                    draw(point);
+                } else{
+                    erase(point);
+                }
             } else{
                 //补充Block模式
                 let bx = e.pageX - tileDownX * (MTile.TileWidth * scaleIndex / 100) - $("#maindisplayline").offset().left;
@@ -441,12 +448,28 @@ $(document).ready(function () {
                 }
             }
         });
+
         $("#maindisplayline").mousemove(function(e){
             let mx = e.pageX - $("#maindisplayline").offset().left;
             let my = e.pageY - $("#maindisplayline").offset().top;
             let grid_num_x= parseInt(mx / (Map.tileWidth * scaleIndex / 100));
             let grid_num_y = parseInt(my / (Map.tileWidth * scaleIndex / 100));
-            $('#cursorCoordinate').text('['+grid_num_x + ', ' + grid_num_y + ']');
+            if(oldgrid_num[0] != grid_num_x || oldgrid_num[1] != grid_num_y){
+                $('#cursorCoordinate').text('['+grid_num_x + ', ' + grid_num_y + ']');
+                oldgrid_num[0] = grid_num_x;
+                oldgrid_num[1] = grid_num_y;
+                if(!isBlockOpen){
+                    //绘制图形
+                    point.x = grid_num_x;
+                    point.y = grid_num_y;
+                    if(e.which == 1){
+                        draw(point);
+                    } else if(e.which == 3){
+                        erase(point);
+                    }
+                } 
+            }
+
         });
     }
 

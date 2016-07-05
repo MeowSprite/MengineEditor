@@ -28,9 +28,6 @@
 				<img id="maindisplay" class="drawdisplay" draggable="false"/>
 				<img id="maindisplayline" class="drawdisplay" draggable="false"/>	
 			</div>
-			<div style="display:none" id="tileContainer">
-				<img id="tileImg" src="./BasicMap.png" style="display:none" />				
-			</div>
 		</main>
 		<div class="proset">
 			<div>
@@ -39,18 +36,9 @@
 				<p class="navlist">width: </p><input type="text" />
 				<p class="navlist">tile list:</p>
 				<div class="list" id="tilelist">
-					<div class="list-item">
-						<span class="list-left"><img src="assets/img/close.png"></span><i>hahaha.png</i>
-					</div>
 				</div>
 				<p class="navlist">layers:</p>
 				<div class="list" id="layerlist">
-					<div class="list-item" draggable="true" ondragover="listAllowDrop(event)">
-						<span class="list-left layer-close"><img src="assets/img/close.png"></span>
-						<i class="dblclick-change-label">haha</i>
-						<input class="list-input" type="text" value="haha">
-						<span class="list-right layer-visible"><img src="assets/img/eye.png"></span>
-					</div>
 					<div class="list-item" id="addNewLayer">
 						<div class="list-add">
 							<img src="assets/img/add.png">
