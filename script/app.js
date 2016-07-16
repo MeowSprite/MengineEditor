@@ -10,7 +10,7 @@ var Tile = {
     MTile : {}
 };
 
-TileIdIndex = [];   //Tile名字到Id的索引
+TileIdIndex = {};   //Tile名字到Id的索引
 //Layer里的每个Tile记号，最后一个数字表示所属的TileID，其他数字表名Tile内的块ID
 
 var Map = {
@@ -19,7 +19,7 @@ var Map = {
     tileY : 0,
     tileWidth : 0,
     tileBlockNum : 0,
-    Tiles : [],
+    Tiles : {},
     layers : {},    //layers具体存的数据
     layerIndex : []     //用于指明layer的层次关系
 };
@@ -82,6 +82,14 @@ $(document).ready(function () {
         navshow();
     });
     ipc.on('tile-selected', function(event, selData){
+        //使用ID而不是名字
+        console.log(selectData, selData);
+        if(selectData != null){
+            selectTileColor(TileIdIndex[selectData.filename], TileIdIndex[selData.filename]);
+        }
+        else{
+            selectTileColor(null, TileIdIndex[selData.filename]);
+        }
         selectData = selData;
         selectData.tileID = TileIdIndex[selectData.filename];
         selectData.srcX = selData.left * selData.tileWidth;
@@ -93,8 +101,8 @@ $(document).ready(function () {
 
     ipc.on('addTile', function(event, tileData){
         console.log(tileData);
-        let item = newListItem(tileData.filename);
         let tile = {};
+        tile.live = true;
         tile.file = tileData.file;
         tile.datafile = tileData.datafile;
         //tile.tiledata = tileData.tiledata;
@@ -102,12 +110,24 @@ $(document).ready(function () {
         tile.MTile = tileData.MTile;
         tileImg(tileData.filename, tile.imgdata);
         //为Tile分配一个ID，以便在layer标记
-        tile.tileID = Map.Tiles.length;
+        //Todo：也要有唯一的ID
+        let id = 0;
+        while(Map.Tiles.hasOwnProperty(id)){
+            id += 1;
+            if(id > Map.tileMaxNum){
+                //Todo：处理最大Tile数
+                console.log("Tile数量已达到最大");
+            }
+        }
+        tile.tileID = id;
         //更新总Tile块数目
         tile.blockNum = tile.MTile.TileX * tile.MTile.TileY;
         Map.tileBlockNum += tile.blockNum;
         TileIdIndex[tileData.filename] = tile.tileID;
-        Map.Tiles.push(tile);
+        //Map.Tiles.push(tile);
+        Map.Tiles[tile.tileID] = tile;
+
+        let item = newListItem(tile.tileID, tileData.filename);
 
         //初始化函数
         putListTextArg(item, 'filepath', tileData.file);
@@ -119,7 +139,9 @@ $(document).ready(function () {
             if(res == true){
                 let filename = $(this).parent().siblings("i").text();
                 ipc.send('deletetile', filename);
-                delete Map.Tiles[filename];
+                delete Map.Tiles[TileIdIndex[filename]];
+                delete TileIdIndex[filename];
+                //Todo：删除的Tile的时候，一定要重新绘制画面，把相关的Tile排除。
                 $(this).parent().parent().remove();
             }
         });
@@ -281,6 +303,18 @@ $(document).ready(function () {
         item.click();
     });
 
+    function selectTileColor(oldID, newID){
+        if(oldID == newID)
+            return;
+        console.log(oldID, newID);
+        if(oldID && oldID != null){
+            $('#tile-' + oldID).css('background', '');
+        }
+        if(newID && newID != null || newID == 0){
+            $('#tile-' + newID).css("background", "#5aaee0");
+        }
+    }
+
     function getDrawerIdFromLayer(name){
         return "drawer-" + name;
     }
@@ -361,7 +395,7 @@ $(document).ready(function () {
         let tileID = TileIdIndex[selectData.filename];
         for(let i = 0; i < h; i++){
             for(let j = 0; j < w; j++){
-                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j] * 10 + tileID;
+                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j] * Map.tileMaxNum + tileID;
             }
         }
     }

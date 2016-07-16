@@ -32,8 +32,9 @@ function prosethide(){
 }
 
 //list-item
-function newListItem(name, icon){
+function newListItem(id, name, icon){
     let item = $('<div class="list-item"><span><img src="assets/img/close.png"></span><i>hahaha.png</i></div>');
+    item.attr('id', "tile-" + id);
     let textbox = item.children("i");
     textbox.text(name);
     if(icon){
