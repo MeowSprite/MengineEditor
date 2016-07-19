@@ -28,7 +28,30 @@ var template = [
       {
         label: '新建',
         click: function(item, focusedWindow) {
-          winContainer[0].webContents.send('newMap');
+          focusedWindow.webContents.send('newMap');
+        }
+      },
+      {
+        label: '打开',
+        click: function(item, focusedWindow) {
+          Dialog.showOpenDialog( 
+            {
+              filters:[ {name: 'Project', extensions: ['map']} ],
+              properties : ['openFile']
+            },
+            function(filelist){
+              //focusedWindow.webContents.send('loadTileFile', fileName);
+              if(filelist){
+                openMapProject(filelist[0], focusedWindow);
+              }
+            }
+          );
+        }
+      },
+      {
+        label: '保存地图',
+        click: function(item, focusedWindow) {
+          focusedWindow.webContents.send('save');
         }
       },
       {
@@ -41,10 +64,10 @@ var template = [
             },
             function(filelist){
               //focusedWindow.webContents.send('loadTileFile', fileName);
-              for(var i in filelist){
-                let tilewin = createTileWindow(filelist[i]);
-                //if(tilewin != null)
-                //  winContainer[0].webContents.send('addTile', tilewin);
+              if(filelist){
+                for(var i in filelist){
+                  let tilewin = createTileWindow(filelist[i], focusedWindow);
+                }
               }
             }
           );
@@ -86,10 +109,33 @@ let tilemenu = Menu.buildFromTemplate(tileMenu);
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 //let mainWindow;
-let winContainer = {};
+let projectNum = 0;
+let mainWinContainer = {};
+let tileContainer = {};   //每个工程指定一个tile集 id:{tileWindow}
 
-ipc.on('tile-save', function(event, filename, tileData, noMsgBox){
-  let win = winContainer[filename];
+//用于Map工程保存
+var projectMainPath = null;
+var projectMapData = null;
+ipc.on('project-save', function(event, mapData){
+  projectMapData = mapData;
+  if(projectMainPath == null){
+    Dialog.showSaveDialog({
+      filters: [
+        {name: 'Project', extensions: ['map']}
+      ]
+    }, function(filelist){
+      if(filelist){
+        saveMapProject(filelist);
+        projectMainPath = filelist;
+      }
+    });
+  } else{
+    saveMapProject(projectMainPath);
+  }
+});
+
+ipc.on('tile-save', function(event, filename, tileData, pid, noMsgBox){
+  let win = tileContainer[pid][filename];
   //let jsonfilepath = win.filedir + win.filename + '.json';
   let fd = fs.openSync(win.datafile, 'w');
   fs.writeSync(fd, JSON.stringify(tileData));
@@ -105,20 +151,54 @@ ipc.on('tile-save', function(event, filename, tileData, noMsgBox){
 });
 
 ipc.on('opentile', function(event, filepath){
-  createTileWindow(filepath);
+  let mainwin = BrowserWindow.fromId(event.sender.id);
+  createTileWindow(filepath, mainwin);
 });
 
 ipc.on('deletetile', function(event, filename){
-  if(winContainer.hasOwnProperty(filename)){
-    winContainer[filename].close();
+  let mainwin = BrowserWindow.fromId(event.sender.id);
+  if(tileContainer[mainwin.pid].hasOwnProperty(filename)){
+    tileContainer[mainwin.pid][filename].close();
   }
 });
 
-function createTileWindow(filepath){
+function openMapProject(filepath, focusedWindow){
+  let data = fs.readFileSync(filepath, 'utf8');
+  let mapData = JSON.parse(data);
+  for(var tileID in mapData.Tiles){
+      let tileData = fs.readFileSync(mapData.Tiles[tileID].datafile, 'utf8');
+      mapData.Tiles[tileID].MTile = JSON.parse(tileData);
+      let img = nativeImage.createFromPath(mapData.Tiles[tileID].file);
+      let size = img.getSize();
+      if(size.width == 0 && size.height == 0){
+        //Todo：处理图片文件打开失败
+        continue;
+      }
+      mapData.Tiles[tileID].imgdata = img.toDataURL();
+    }
+  focusedWindow.webContents.send('openPeoject', mapData);
+}
+
+function saveMapProject(filepath){
+  if(projectMapData != null){
+    //清洗数据
+    for(var tileID in projectMapData.Tiles){
+      delete projectMapData.Tiles[tileID].MTile;
+      delete projectMapData.Tiles[tileID].imgdata;
+    }
+
+    let fd = fs.openSync(filepath, 'w');
+    fs.writeSync(fd, JSON.stringify(projectMapData));
+    fs.closeSync(fd);
+  }
+}
+
+function createTileWindow(filepath, focusedWindow){
   let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
   let filedir = filepath.substr(0, filepath.lastIndexOf('\\') + 1);
   let newTileWin = null;
-  if(!winContainer.hasOwnProperty(filename)){
+  let tileSet = tileContainer[focusedWindow.pid]
+  if(!tileSet.hasOwnProperty(filename)){
     let img = nativeImage.createFromPath(filepath);
     let size = img.getSize();
     if(size.width == 0 && size.height == 0){
@@ -136,46 +216,58 @@ function createTileWindow(filepath){
       newTileWin.tiledata = fs.readFileSync(newTileWin.datafile, 'utf8');
     }
     newTileWin.img = img;
-    newTileWin.mainWinID = winContainer[0].id;
+    newTileWin.mainWinID = focusedWindow.id;
+    newTileWin.pid = focusedWindow.pid;
     newTileWin.imgData = img.toDataURL();
     newTileWin.webContents.openDevTools();
     //其实windows有自己的唯一ID，但是我们需要判断打开的文件是否已打开，所以就用文件名当ID了
-    winContainer[filename] = newTileWin;
+    tileSet[filename] = newTileWin;
     newTileWin.on('closed', function() {
-      delete winContainer[this.filename];
+      console.log("closeWin: ", this.filename);
+      delete tileContainer[this.pid][this.filename];
     });
   } else{
-    winContainer[filename].focus();
+    tileSet[filename].focus();
   }
   return newTileWin;
 }
 
 function createWindow () {
   // Create the browser window.
-  winContainer[0] = new BrowserWindow({width: 800, height: 600, icon:iconFile});
+  mainWinContainer[projectNum] = new BrowserWindow({width: 800, height: 600, icon:iconFile});
 
   var menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
 
   // and load the index.html of the app.
-  winContainer[0].loadURL('file://' + __dirname + '/index.html');
+  mainWinContainer[projectNum].loadURL('file://' + __dirname + '/index.html');
 
   // Open the DevTools.
-  winContainer[0].webContents.openDevTools();
+  mainWinContainer[projectNum].webContents.openDevTools();
+
+  //Set project id bind to windows
+  mainWinContainer[projectNum].pid = projectNum;
+
+  //Init the tile Container
+  tileContainer[projectNum] = {};
 
   // Emitted when the window is closed.
-  winContainer[0].on('closed', function() {
+  mainWinContainer[projectNum].on('closed', function(event) {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    for(var winID in winContainer){
-      if(winID != 0){
-        winContainer[winID].close();
-      }
+    let pid = event.sender.pid;
+    for(var winID in tileContainer[pid]){
+        //Todo：关闭当前的工程相关的窗口
+        console.log(winID);
+        tileContainer[pid][winID].close();
     }
-    winContainer[0] = null;
+    tileContainer[pid] = null;
+    mainWinContainer[pid] = null;
   });
+
+  projectNum += 1;
 }
 
 // This method will be called when Electron has finished
@@ -188,13 +280,5 @@ app.on('window-all-closed', function () {
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (winContainer[0] === null) {
-    createWindow();
   }
 });

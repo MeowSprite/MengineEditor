@@ -26,7 +26,7 @@ $(function(){
     }
     ipc.on('save', function(event, msg){
         //$("#new").show();
-        ipc.send('tile-save', curWin.filename, MTile);
+        ipc.send('tile-save', curWin.filename, MTile, curWin.pid);
     });
     if(curWin.tiledata !== ""){
         MTile = JSON.parse(curWin.tiledata);
@@ -389,7 +389,7 @@ $(function(){
         mainWin.webContents.send('tile-selected', selData);
     }
     if(curWin.tiledata === ""){
-        ipc.send('tile-save', curWin.filename, MTile, true);
+        ipc.send('tile-save', curWin.filename, MTile, curWin.pid, true);
     }
     //curWin.MTile = MTile;
     //console.log(curWin);
