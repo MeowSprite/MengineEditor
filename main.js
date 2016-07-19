@@ -112,25 +112,27 @@ let tilemenu = Menu.buildFromTemplate(tileMenu);
 let projectNum = 0;
 let mainWinContainer = {};
 let tileContainer = {};   //每个工程指定一个tile集 id:{tileWindow}
+let projectContainer = {};
 
 //用于Map工程保存
 var projectMainPath = null;
 var projectMapData = null;
-ipc.on('project-save', function(event, mapData){
+ipc.on('project-save', function(event, mapData, pid){
   projectMapData = mapData;
-  if(projectMainPath == null){
-    Dialog.showSaveDialog({
+  if(!projectContainer.hasOwnProperty(pid)){
+    let filelist = Dialog.showSaveDialog({
       filters: [
         {name: 'Project', extensions: ['map']}
       ]
-    }, function(filelist){
-      if(filelist){
-        saveMapProject(filelist);
-        projectMainPath = filelist;
-      }
     });
+    if(filelist){
+      saveMapProject(filelist);
+      projectContainer[pid] = filelist;
+    }
+    event.returnValue = true;
   } else{
-    saveMapProject(projectMainPath);
+    saveMapProject(projectContainer[pid]);
+    event.returnValue = true;
   }
 });
 
@@ -164,20 +166,8 @@ ipc.on('deletetile', function(event, winId, filename){
 
 function openMapProject(filepath, focusedWindow){
   let data = fs.readFileSync(filepath, 'utf8');
-  //let mapData = JSON.parse(data);
-  //for(var tileID in mapData.Tiles){
-  //    let tileData = fs.readFileSync(mapData.Tiles[tileID].datafile, 'utf8');
-  //    mapData.Tiles[tileID].MTile = JSON.parse(tileData);
-  //    let img = nativeImage.createFromPath(mapData.Tiles[tileID].file);
-  //    let size = img.getSize();
-  //    if(size.width == 0 && size.height == 0){
-  //      //Todo：处理图片文件打开失败
-  //     continue;
-  //    }
-  //    mapData.Tiles[tileID].imgdata = img.toDataURL();
-  //}
+  projectContainer[projectNum] = filepath;
   createWindow(data);
-  //focusedWindow.webContents.send('openPeoject', mapData);
 }
 
 function saveMapProject(filepath){
@@ -187,7 +177,7 @@ function saveMapProject(filepath){
       delete projectMapData.Tiles[tileID].MTile;
       delete projectMapData.Tiles[tileID].imgdata;
     }
-
+    console.log(filepath);
     let fd = fs.openSync(filepath, 'w');
     fs.writeSync(fd, JSON.stringify(projectMapData));
     fs.closeSync(fd);
@@ -266,7 +256,7 @@ function createWindow (mapData) {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    let pid = event.sender.pid;
+    let pid = this.pid;
     for(var winID in tileContainer[pid]){
         //Todo：关闭当前的工程相关的窗口
         console.log(winID);
@@ -274,6 +264,7 @@ function createWindow (mapData) {
     }
     tileContainer[pid] = null;
     mainWinContainer[pid] = null;
+    delete projectContainer[pid];
   });
 
   projectNum += 1;
@@ -294,4 +285,8 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+ipc.on('haha-test', function(event, a){
+  console.log(event, a);
 });

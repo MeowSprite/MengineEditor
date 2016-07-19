@@ -1,5 +1,6 @@
 const ipc = require('electron').ipcRenderer;
 const remote = require('electron').remote;
+const dialog = require('electron').remote.dialog;
 
 var Tile = {
     file : "",
@@ -15,9 +16,9 @@ var Tile = {
 
 var Map = {
     tileMaxNum : 10,    //最大tilefile的数量，这个必须是10的倍数。
-    tileX : 0,
-    tileY : 0,
-    tileWidth : 0,
+    tileX : 20,
+    tileY : 20,
+    tileWidth : 48,
     tileBlockNum : 0,
     TileIdIndex : {},   //Tile名字到Id的索引
     Tiles : {},
@@ -43,11 +44,14 @@ var curDisplayID = "";
 var curDrawer = null;
 var curDrawerContext = null;
 var curLayer = "";
+var ischanged = false; //Todo：在任何更改工程下，标记修改
+var title = "";
 
 $(document).ready(function () {
     //var main = new mainForm();
     let curWin = remote.getCurrentWindow();
     const drawer = require ("./script/drawer.js");
+    title = curWin.getTitle();
     //初始化工程内容
 
     var lineCanvas = document.getElementById("mainline");
@@ -61,20 +65,6 @@ $(document).ready(function () {
         drawer.drawVirtualLine(lineContext, Map.tileX, Map.tileY, Map.tileWidth);
         let maindisplaylineData = lineCanvas.toDataURL();
         $("#maindisplayline").attr("src", maindisplaylineData);
-        //Todo：姑且项目是空，会默认先创建一个图层
-        console.log("创建图层");
-        //$('#addNewLayer').click();  //创建新的图层
-        //curLayer = $('#layerlist .layer-item').get(0).id;   //获得第一个Layer的名称
-
-
-        //Todo：创建第一个画板，这里应该需要一个全新的函数，创建画层
-        //$("#main").attr("width", Map.tileX * Map.tileWidth ); //注意canvas只能通过html属性来设置宽高，否者图像会拉伸
-		//$("#main").attr("height", Map.tileY * Map.tileWidth );
-        //Todo: 临时使用一个main，之后会增加多个图层
-        //curDrawer = document.getElementById("main");
-        //curDrawerContext = curDrawer.getContext("2d");
-        //curDrawerID = "main";
-        //curDisplayID = "maindisplay";
     }
 
     //注册electron事件
@@ -122,7 +112,6 @@ $(document).ready(function () {
         tile.MTile = tileData.MTile;
         
         //为Tile分配一个ID，以便在layer标记
-        //Todo：也要有唯一的ID
         let id = 0;
         while(Map.Tiles.hasOwnProperty(id)){
             id += 1;
@@ -163,11 +152,40 @@ $(document).ready(function () {
             });
             addToListContainer("tilelist", item);
         }
+
+        projectDataChange();
     });
 
     ipc.on('save', function(event){
-        ipc.send('project-save', Map);
+        ipc.send('project-save', Map, curWin.pid);
+        ischanged = false;
+        curWin.setTitle(title);
     });
+    
+    window.onbeforeunload = (e) => {
+        if(ischanged == true){
+            dialog.showMessageBox(
+                {
+                    type: "warning",
+                    buttons:["Save", "Ignore", "Cancel"],
+                    title: "project change save",
+                    message: "The map project is changed, please Save or Ignore",
+                    cancelId: 2,
+                },
+                function(response){
+                    console.log(response);
+                    if(response == 0){
+                        ipc.sendSync('project-save', Map, curWin.pid);
+                        curWin.destroy();
+                    } else if(response == 1){
+                        curWin.destroy();
+                    }
+                }
+            );
+            e.returnValue = false;
+        }
+    };
+
     //注册Dom事件
     $(window).keyup(function (e) {
        switch (e.keyCode) {
@@ -207,6 +225,8 @@ $(document).ready(function () {
         let newlayer = newLayer();
         Map.layers['Layer' + id] = newlayer;
         createLayerDom('Layer' + id);
+
+        projectDataChange();
     });
 
     function createLayerDom(name){
@@ -330,10 +350,6 @@ $(document).ready(function () {
         item.click();
     }
 
-    function closeProject(){
-        
-    }
-
     function selectTileColor(oldID, newID){
         if(oldID == newID)
             return;
@@ -425,9 +441,11 @@ $(document).ready(function () {
         let tileID = Map.TileIdIndex[selectData.filename];
         for(let i = 0; i < h; i++){
             for(let j = 0; j < w; j++){
-                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = selectData.blocksID[i][j] * Map.tileMaxNum + tileID;
+                Map.layers[curLayer][i + drawPoint.y][j + drawPoint.x] = ( selectData.blocksID[i][j] + 1 ) * Map.tileMaxNum + tileID;
             }
         }
+
+        projectDataChange();
     }
 
     function drawBlock(){
@@ -569,9 +587,11 @@ $(document).ready(function () {
             for(let j = 0; j < Map.tileY; j++){
                 for(let i = 0; i < Map.tileX; i++){
                     let data = Map.layers[layerName][j][i];
+                    if(data == 0)
+                        continue;
                     //先获得Tile
                     let tileID = parseInt(data%Map.tileMaxNum);
-                    let blockID = parseInt(data/Map.tileMaxNum);
+                    let blockID = parseInt(data/Map.tileMaxNum) - 1;
                     let img = tileImg(Map.Tiles[tileID].MTile.file);
                     let srcY = parseInt(blockID/Map.Tiles[tileID].MTile.TileX) * Map.Tiles[tileID].MTile.TileWidth;
                     let srcX = parseInt(blockID%Map.Tiles[tileID].MTile.TileX) * Map.Tiles[tileID].MTile.TileWidth;
@@ -590,6 +610,14 @@ $(document).ready(function () {
         setCurWorkedLayer(oldLayer);
     }
 
+    //用于修改，以后可能用于保存信息栈，实现undo与redo操作
+    function projectDataChange(){
+        if(ischanged == false){
+            curWin.setTitle(title + ' *');
+        }
+        ischanged = true;
+    }
+
     //
     if(curWin.isDefaultMap){
         Map.tileX = 20;
@@ -599,6 +627,8 @@ $(document).ready(function () {
         drawInit();
         prosetshow();
         $('#addNewLayer').click();
+        ischanged = false;
+        curWin.setTitle(title);
     } else{
         //console.log(curWin.mapData);
         Map = JSON.parse(curWin.mapData);
