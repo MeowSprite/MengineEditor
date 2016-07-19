@@ -150,13 +150,13 @@ ipc.on('tile-save', function(event, filename, tileData, pid, noMsgBox){
   });
 });
 
-ipc.on('opentile', function(event, filepath){
-  let mainwin = BrowserWindow.fromId(event.sender.id);
+ipc.on('opentile', function(event, winId, filepath){
+  let mainwin = BrowserWindow.fromId(winId);
   createTileWindow(filepath, mainwin);
 });
 
-ipc.on('deletetile', function(event, filename){
-  let mainwin = BrowserWindow.fromId(event.sender.id);
+ipc.on('deletetile', function(event, winId, filename){
+  let mainwin = BrowserWindow.fromId(winId);
   if(tileContainer[mainwin.pid].hasOwnProperty(filename)){
     tileContainer[mainwin.pid][filename].close();
   }
@@ -164,19 +164,20 @@ ipc.on('deletetile', function(event, filename){
 
 function openMapProject(filepath, focusedWindow){
   let data = fs.readFileSync(filepath, 'utf8');
-  let mapData = JSON.parse(data);
-  for(var tileID in mapData.Tiles){
-      let tileData = fs.readFileSync(mapData.Tiles[tileID].datafile, 'utf8');
-      mapData.Tiles[tileID].MTile = JSON.parse(tileData);
-      let img = nativeImage.createFromPath(mapData.Tiles[tileID].file);
-      let size = img.getSize();
-      if(size.width == 0 && size.height == 0){
-        //Todo：处理图片文件打开失败
-        continue;
-      }
-      mapData.Tiles[tileID].imgdata = img.toDataURL();
-    }
-  focusedWindow.webContents.send('openPeoject', mapData);
+  //let mapData = JSON.parse(data);
+  //for(var tileID in mapData.Tiles){
+  //    let tileData = fs.readFileSync(mapData.Tiles[tileID].datafile, 'utf8');
+  //    mapData.Tiles[tileID].MTile = JSON.parse(tileData);
+  //    let img = nativeImage.createFromPath(mapData.Tiles[tileID].file);
+  //    let size = img.getSize();
+  //    if(size.width == 0 && size.height == 0){
+  //      //Todo：处理图片文件打开失败
+  //     continue;
+  //    }
+  //    mapData.Tiles[tileID].imgdata = img.toDataURL();
+  //}
+  createWindow(data);
+  //focusedWindow.webContents.send('openPeoject', mapData);
 }
 
 function saveMapProject(filepath){
@@ -232,7 +233,7 @@ function createTileWindow(filepath, focusedWindow){
   return newTileWin;
 }
 
-function createWindow () {
+function createWindow (mapData) {
   // Create the browser window.
   mainWinContainer[projectNum] = new BrowserWindow({width: 800, height: 600, icon:iconFile});
 
@@ -252,6 +253,14 @@ function createWindow () {
   //Init the tile Container
   tileContainer[projectNum] = {};
 
+  //transfor the map data
+  if(mapData){
+    mainWinContainer[projectNum].isDefaultMap = false;
+  } else{
+    mainWinContainer[projectNum].isDefaultMap = true;
+  }
+  mainWinContainer[projectNum].mapData = mapData;
+
   // Emitted when the window is closed.
   mainWinContainer[projectNum].on('closed', function(event) {
     // Dereference the window object, usually you would store windows
@@ -270,9 +279,13 @@ function createWindow () {
   projectNum += 1;
 }
 
+function initCreateWindow(){
+  createWindow();
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
-app.on('ready', createWindow);
+app.on('ready', initCreateWindow);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {

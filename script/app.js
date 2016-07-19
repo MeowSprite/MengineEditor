@@ -63,7 +63,7 @@ $(document).ready(function () {
         $("#maindisplayline").attr("src", maindisplaylineData);
         //Todo：姑且项目是空，会默认先创建一个图层
         console.log("创建图层");
-        $('#addNewLayer').click();  //创建新的图层
+        //$('#addNewLayer').click();  //创建新的图层
         //curLayer = $('#layerlist .layer-item').get(0).id;   //获得第一个Layer的名称
 
 
@@ -77,15 +77,6 @@ $(document).ready(function () {
         //curDisplayID = "maindisplay";
     }
 
-    ipc.on('openPeoject', function(event, mapData){
-        //Todo：打开已有的工程
-        console.log(mapData);
-        //关闭工程
-        //navhide();
-        //drawInit();
-        //prosetshow();
-    });
-
     //注册electron事件
     ipc.on('newMap', function(event, msg){
         //$("#new").show();
@@ -94,7 +85,6 @@ $(document).ready(function () {
 
     ipc.on('tile-selected', function(event, selData){
         //使用ID而不是名字
-        console.log(selectData, selData);
         if(selectData != null){
             selectTileColor(Map.TileIdIndex[selectData.filename], Map.TileIdIndex[selData.filename]);
         }
@@ -107,13 +97,21 @@ $(document).ready(function () {
         selectData.srcY = selData.top * selData.tileWidth;
         selectData.srcW = selData.right* selData.tileWidth;
         selectData.srcH = selData.bottom * selData.tileWidth;
-        console.log(selectData);
     });
 
     ipc.on('addTile', function(event, tileData){
-        console.log(tileData);
         if(Map.TileIdIndex.hasOwnProperty(tileData.filename)){
             console.log("addTile: reopen " + tileData.filename);
+            //用于打开工程时，加载Tile数据
+            //ToTest：普通打开关闭Tile，加载Map工程
+            let tileId = Map.TileIdIndex[tileData.filename];
+            if(!Map.Tiles[tileId].hasOwnProperty("MTile")){
+                let tileId = Map.TileIdIndex[tileData.filename];
+                Map.Tiles[tileId].imgdata = tileData.imgData;
+                Map.Tiles[tileId].MTile = tileData.MTile;
+                addToTilePanal(tileId, tileData);
+                loadedStep();
+            }
             return;
         }
         let tile = {};
@@ -122,7 +120,7 @@ $(document).ready(function () {
         //tile.tiledata = tileData.tiledata;
         tile.imgdata = tileData.imgData;
         tile.MTile = tileData.MTile;
-        tileImg(tileData.filename, tile.imgdata);
+        
         //为Tile分配一个ID，以便在layer标记
         //Todo：也要有唯一的ID
         let id = 0;
@@ -140,26 +138,31 @@ $(document).ready(function () {
         Map.TileIdIndex[tileData.filename] = tile.tileID;
         //Map.Tiles.push(tile);
         Map.Tiles[tile.tileID] = tile;
+        
+        addToTilePanal(tile.tileID, tileData);
 
-        let item = newListItem(tile.tileID, tileData.filename);
+        function addToTilePanal(tileID, tileData){
+            tileImg(tileData.filename, tileData.imgData);
 
-        //初始化函数
-        putListTextArg(item, 'filepath', tileData.file);
-        addListTextFunc(item, function(){
-            ipc.send('opentile', $(this).attr('filepath'));
-        });
-        addListIconFunc(item, function(){
-            let res = confirm("delete this tile");
-            if(res == true){
-                let filename = $(this).parent().siblings("i").text();
-                ipc.send('deletetile', filename);
-                delete Map.Tiles[Map.TileIdIndex[filename]];
-                delete Map.TileIdIndex[filename];
-                //Todo：删除的Tile的时候，一定要重新绘制画面，把相关的Tile排除。
-                $(this).parent().parent().remove();
-            }
-        });
-        addToListContainer("tilelist", item);
+            let item = newListItem(tileID, tileData.filename);
+            //初始化函数
+            putListTextArg(item, 'filepath', tileData.file);
+            addListTextFunc(item, function(){
+                ipc.send('opentile', curWin.id, $(this).attr('filepath'));
+            });
+            addListIconFunc(item, function(){
+                let res = confirm("delete this tile");
+                if(res == true){
+                    let filename = $(this).parent().siblings("i").text();
+                    ipc.send('deletetile', curWin.id, filename);
+                    delete Map.Tiles[Map.TileIdIndex[filename]];
+                    delete Map.TileIdIndex[filename];
+                    //Todo：删除的Tile的时候，一定要重新绘制画面，把相关的Tile排除。
+                    $(this).parent().parent().remove();
+                }
+            });
+            addToListContainer("tilelist", item);
+        }
     });
 
     ipc.on('save', function(event){
@@ -193,30 +196,36 @@ $(document).ready(function () {
 
     $('#addNewLayer').click(function(e){
         e.preventDefault();
-        console.log("new layer add");
+
+        //加入Map工程数据集
         let id = 1;
         while($.inArray('Layer' + id, Map.layerIndex) != -1){
             id += 1;
         }
         Map.layerIndex.push('Layer' + id);
-        let item = newListItemLayers('Layer' + id);
-        item.attr("id", 'Layer' + id);
-        //插入layer list
-        $(this).before(item);
-        //创建新的Drawer
-        newDrawer('Layer' + id);
         //创建新的Layer插入工程数据中
         let newlayer = newLayer();
         Map.layers['Layer' + id] = newlayer;
+        createLayerDom('Layer' + id);
+    });
+
+    function createLayerDom(name){
+        //创建Html界面元素
+        let item = newListItemLayers(name);
+        item.attr("id", name);
+        //插入layer list
+        $('#addNewLayer').before(item);
+        //创建新的Drawer
+        newDrawer(name);
 
         if(Map.layerIndex.length == 1){
-            let canvasName = getDrawerIdFromLayer('Layer' + id);
-            let displayName = getDisplayIdFromLayer('Layer' + id);
+            let canvasName = getDrawerIdFromLayer(name);
+            let displayName = getDisplayIdFromLayer(name);
             curDrawer = document.getElementById(canvasName);
             curDrawerContext = curDrawer.getContext("2d");
             curDrawerID = canvasName;
             curDisplayID = displayName; 
-            curLayer = 'Layer' + id;
+            curLayer = name;
         }
 
         //item选择实现
@@ -319,7 +328,7 @@ $(document).ready(function () {
         });
 
         item.click();
-    });
+    }
 
     function closeProject(){
         
@@ -328,7 +337,6 @@ $(document).ready(function () {
     function selectTileColor(oldID, newID){
         if(oldID == newID)
             return;
-        console.log(oldID, newID);
         if(oldID && oldID != null || oldID == 0){
             $('#tile-' + oldID).css('background', '');
         }
@@ -488,7 +496,6 @@ $(document).ready(function () {
                 if(e.which == 1){
                     //左键表示添加
                     cursorStatus = 1;
-                    console.log(MTile.tiles[tileid].blocks[blockid]);
                     if(MTile.tiles[tileid].blocks[blockid] === 0){
                         drawRect(linecontext, (tileDownX * MTile.subBlocks + blockDownX) * MTile.TileWidth / MTile.subBlocks,
                              (tileDownY * MTile.subBlocks + blockDownY) * MTile.TileWidth / MTile.subBlocks, 
@@ -529,12 +536,76 @@ $(document).ready(function () {
         });
     }
 
-    //For Test
-    Map.tileX = 20;
-    Map.tileY = 20;
-    Map.tileWidth = 48;
-    navhide();
-    drawInit();
-    prosetshow();
+    var loadProgress = 0;
+    function mapDataLoad(){
+        //加载Tile数据
+        for(var tileID in Map.Tiles){
+            loadProgress++;
+            ipc.send('opentile', curWin.id,  Map.Tiles[tileID].file);
+        }
+        //加载Drawer页面
+        for(var layerName in Map.layers){
+            createLayerDom(layerName);
+        }
+    }
+
+    function loadedStep(){
+        loadProgress--; //单线程不需要锁吧?
+        if(loadProgress == 0){
+            wholeRedraw();
+        }
+    }
+
+    //整体重画功能函数
+    function wholeRedraw(){
+        let dstX = 0;
+        let dstY = 0;
+        let dstW = Map.tileWidth;
+        let dstH = Map.tileWidth;
+        let oldLayer = curLayer;
+        for(let layerName in Map.layers){
+            //切换Layer
+            setCurWorkedLayer(layerName);
+            for(let j = 0; j < Map.tileY; j++){
+                for(let i = 0; i < Map.tileX; i++){
+                    let data = Map.layers[layerName][j][i];
+                    //先获得Tile
+                    let tileID = parseInt(data%Map.tileMaxNum);
+                    let blockID = parseInt(data/Map.tileMaxNum);
+                    let img = tileImg(Map.Tiles[tileID].MTile.file);
+                    let srcY = parseInt(blockID/Map.Tiles[tileID].MTile.TileX) * Map.Tiles[tileID].MTile.TileWidth;
+                    let srcX = parseInt(blockID%Map.Tiles[tileID].MTile.TileX) * Map.Tiles[tileID].MTile.TileWidth;
+                    dstX = i * Map.tileWidth;
+                    dstY = j * Map.tileWidth;
+                    curDrawerContext.drawImage(img, 
+                            srcX, srcY,
+                            Map.Tiles[tileID].MTile.TileWidth, Map.Tiles[tileID].MTile.TileWidth,
+                            dstX, dstY,
+                            dstW, dstH);
+                }
+            }
+            //显示整个Layer
+            showDisplay();
+        }
+        setCurWorkedLayer(oldLayer);
+    }
+
+    //
+    if(curWin.isDefaultMap){
+        Map.tileX = 20;
+        Map.tileY = 20;
+        Map.tileWidth = 48;
+        navhide();
+        drawInit();
+        prosetshow();
+        $('#addNewLayer').click();
+    } else{
+        //console.log(curWin.mapData);
+        Map = JSON.parse(curWin.mapData);
+        mapDataLoad();
+        drawInit();
+        prosetshow();
+    }
+
     //-------
 });

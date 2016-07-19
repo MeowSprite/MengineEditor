@@ -133,7 +133,7 @@ $(function(){
     //nav内容处理事件
     registerEventChanged('tileWidth', function(){
         let w = $('#tileWidth').val();
-        MTile.TileWidth = w;
+        MTile.TileWidth = parseInt(w);
         MTile.TileX = Math.ceil(MTile.imgWidth/MTile.TileWidth);
         MTile.TileY = Math.ceil(MTile.imgHeight/MTile.TileWidth);
         selRect.tileWidth = MTile.TileWidth;
