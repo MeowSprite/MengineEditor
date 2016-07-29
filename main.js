@@ -7,6 +7,10 @@ const app = electron.app;
 //const BrowserWindow = electron.BrowserWindow;
 const {BrowserWindow} = require('electron');
 
+const Path = require('path');
+
+//const Buffer = require('buffer');
+
 const Menu = electron.Menu;
 
 const MenuItem = electron.MenuItem;
@@ -20,6 +24,10 @@ const ipc = electron.ipcMain;
 const fs = require('fs');
 
 const iconFile = __dirname + "/assets/icon/m.ico";
+
+const proSuffixes = 'mappro';
+
+const mapSuffixes = 'map';
 
 var template = [
   {
@@ -36,7 +44,7 @@ var template = [
         click: function(item, focusedWindow) {
           Dialog.showOpenDialog( 
             {
-              filters:[ {name: 'Project', extensions: ['map']} ],
+              filters:[ {name: 'Project', extensions: [proSuffixes]} ],
               properties : ['openFile']
             },
             function(filelist){
@@ -52,6 +60,12 @@ var template = [
         label: '保存地图',
         click: function(item, focusedWindow) {
           focusedWindow.webContents.send('save');
+        }
+      },
+      {
+        label: '导出地图',
+        click: function(item, focusedWindow) {
+          focusedWindow.webContents.send('export');
         }
       },
       {
@@ -122,7 +136,7 @@ ipc.on('project-save', function(event, mapData, pid){
   if(!projectContainer.hasOwnProperty(pid)){
     let filelist = Dialog.showSaveDialog({
       filters: [
-        {name: 'Project', extensions: ['map']}
+        {name: 'Project', extensions: [proSuffixes]}
       ]
     });
     if(filelist){
@@ -134,6 +148,62 @@ ipc.on('project-save', function(event, mapData, pid){
     saveMapProject(projectContainer[pid]);
     event.returnValue = true;
   }
+});
+
+ipc.on('export-map', function(event, Map, pid){
+  let filelist = Dialog.showSaveDialog({
+    filters: [
+      {name: 'Project', extensions: [mapSuffixes]}
+    ]
+  });
+  if(!filelist){
+    return ;
+  }
+  let basedir = Path.dirname(filelist);
+  let mapdata = {};
+  mapdata["tileMaxNum"] = Map.tileMaxNum;
+  mapdata["tileWidth"] = Map.tileWidth;
+  mapdata["tileX"] = Map.tileX;
+  mapdata["tileY"] = Map.tileY;
+  mapdata["background"] = "";
+  mapdata["name"] = "name";
+  mapdata["tiles"] = [];
+  for(let key in Map.Tiles){
+    let tile = {};
+    let a = [];
+    tile["blockNum"] = Map.Tiles[key].blockNum;
+    //将tile文件保存到该目录下。
+    tile["file"] = Path.basename(Map.Tiles[key].file);
+    filecopy(Map.Tiles[key].file, Path.join(basedir, tile["file"]));
+    //tile[""]
+    tile["tileID"] = parseInt(Map.Tiles[key].tileID);
+    tile["blockWidth"] = parseInt(Map.Tiles[key].MTile.TileWidth);
+    tile["blockX"] = parseInt(Map.Tiles[key].MTile.TileX);
+    tile["blockY"] = parseInt(Map.Tiles[key].MTile.TileY);
+    mapdata["tiles"].push(tile);
+  }
+  mapdata["bottom"] = {};
+  for(let key in Map.layerIndex){
+    let layername = Map.layerIndex[key];
+    let layerData = Map.layers[layername];
+    let data = "";
+    for(let i = 0; i < mapdata.tileY; i++){
+      for(let j = 0; j < mapdata.tileX; j++){
+        let temp=String.fromCharCode(layerData[i][j]>>8);
+        data += temp;
+        temp=String.fromCharCode(layerData[i][j]%256);
+        data += temp;
+      }
+    }
+    //mapdata["bottom"][layername] = data;
+    const buf = Buffer.from(data, 'ascii');
+    let base64data = buf.toString('base64');
+    mapdata["bottom"][layername] = base64data;
+  }
+  mainWinContainer[pid].webContents.send("test", mapdata);
+  let fd = fs.openSync(filelist, 'w');
+  fs.writeSync(fd, JSON.stringify(mapdata));
+  fs.closeSync(fd);
 });
 
 ipc.on('tile-save', function(event, filename, tileData, pid, noMsgBox){
@@ -185,8 +255,10 @@ function saveMapProject(filepath){
 }
 
 function createTileWindow(filepath, focusedWindow){
-  let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
-  let filedir = filepath.substr(0, filepath.lastIndexOf('\\') + 1);
+  let filename = Path.basename(filepath);
+  let filedir = Path.dirname(filepath);
+  //let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
+  //let filedir = filepath.substr(0, filepath.lastIndexOf('\\') + 1);
   let newTileWin = null;
   let tileSet = tileContainer[focusedWindow.pid]
   if(!tileSet.hasOwnProperty(filename)){
@@ -290,3 +362,10 @@ app.on('window-all-closed', function () {
 ipc.on('haha-test', function(event, a){
   console.log(event, a);
 });
+
+function filecopy(src, dst) {
+  if(src == dst){
+    return;
+  }
+  fs.createReadStream(src).pipe(fs.createWriteStream(dst));
+}

@@ -49,7 +49,7 @@ var title = "";
 
 $(document).ready(function () {
     //var main = new mainForm();
-    let curWin = remote.getCurrentWindow();
+    const curWin = remote.getCurrentWindow();
     const drawer = require ("./script/drawer.js");
     title = curWin.getTitle();
     //初始化工程内容
@@ -122,6 +122,7 @@ $(document).ready(function () {
         }
         tile.tileID = id;
         //更新总Tile块数目
+        console.log(tileData);
         tile.blockNum = tile.MTile.TileX * tile.MTile.TileY;
         Map.tileBlockNum += tile.blockNum;
         Map.TileIdIndex[tileData.filename] = tile.tileID;
@@ -131,8 +132,9 @@ $(document).ready(function () {
         addToTilePanal(tile.tileID, tileData);
 
         function addToTilePanal(tileID, tileData){
+            console.log(tileID, tileData.filename);
             tileImg(tileData.filename, tileData.imgData);
-
+            console.log(tileID, tileData.filename);
             let item = newListItem(tileID, tileData.filename);
             //初始化函数
             putListTextArg(item, 'filepath', tileData.file);
@@ -161,10 +163,19 @@ $(document).ready(function () {
         ischanged = false;
         curWin.setTitle(title);
     });
+
+    ipc.on('export', function(event){
+        ipc.send('export-map', Map, curWin.pid);
+    });
+
+    ipc.on('test',function(event, data){
+        console.log(data);
+    });
     
     window.onbeforeunload = (e) => {
         if(ischanged == true){
             dialog.showMessageBox(
+                curWin,
                 {
                     type: "warning",
                     buttons:["Save", "Ignore", "Cancel"],
