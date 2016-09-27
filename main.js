@@ -88,6 +88,25 @@ var template = [
         }
       },
       {
+        label: '导入Entity',
+        click: function(item, focusedWindow) {
+          Dialog.showOpenDialog( 
+            {
+              filters:[ { name: 'Images', extensions: ['png'] } ],
+              properties : ['openFile']
+            },
+            function(filelist){
+              //focusedWindow.webContents.send('loadTileFile', fileName);
+              if(filelist){
+                for(var i in filelist){
+                  let tilewin = createTileWindow(filelist[i], focusedWindow, true);
+                }
+              }
+            }
+          );
+        }
+      },
+      {
         label: 'Toggle Developer Tools',
         accelerator: (function() {
           if (process.platform == 'darwin')
@@ -254,7 +273,7 @@ function saveMapProject(filepath){
   }
 }
 
-function createTileWindow(filepath, focusedWindow){
+function createTileWindow(filepath, focusedWindow, isEntityMode){
   let filename = Path.basename(filepath);
   let filedir = Path.dirname(filepath);
   //let filename = filepath.substr(filepath.lastIndexOf('\\')+1);
@@ -270,7 +289,14 @@ function createTileWindow(filepath, focusedWindow){
     }
     newTileWin = new BrowserWindow({width:size.width+65, height:size.height+65, title:filename, icon:iconFile});
     newTileWin.setMenu(tilemenu);
-    newTileWin.loadURL('file://' + __dirname + '/tiles.html');
+    if(isEntityMode){
+      newTileWin.isEntityMode = true;
+      newTileWin.loadURL('file://' + __dirname + '/entity.html');
+    }
+    else{
+      newTileWin.isEntityMode = false;
+      newTileWin.loadURL('file://' + __dirname + '/tiles.html');
+    }
     newTileWin.filename = filename;
     newTileWin.file = filepath; //将参数传送进去
     newTileWin.datafile = newTileWin.file + '.json';

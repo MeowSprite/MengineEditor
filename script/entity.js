@@ -10,8 +10,23 @@ var MTile = {
     TileY : 0,
     TileWidth : 48,  //图像需要支持长方形吗
     subBlocks : 4,   //如果图像只是正方形，那这样就可以
-    tiles : []  //块
+    tiles : [],  //块
+    Entity : {}
 };
+
+var MEntity = {
+    id : 0,
+    x : 0,
+    y : 0,
+    width : 0,
+    height : 0,
+    collisionRect : {
+        x : 0,
+        y : 0,
+        w : 0,
+        h : 0
+    }
+}
 
 Blocks = {
     id : 0,
@@ -172,6 +187,7 @@ $(function(){
 
     //编辑Block模式
     var isBlockOpen = false;
+    var isEntityMode = false;
     //MTile.subBlocks = 4;
     if(curWin.tiledata === ""){
         initTiles();
@@ -208,6 +224,12 @@ $(function(){
             $('#tileWidth')[0].disabled = false;
             $('#blockInput').slideUp("normal");
         }
+    });
+
+    $('#entitySelectMode').change(function (e) { 
+        e.preventDefault();
+        isEntityMode = $('#entitySelectMode')[0].checked;
+        $('#entitySelectMode').blur();
     });
 
     //增加删除tile block
@@ -339,9 +361,13 @@ $(function(){
                     height = tileDownY - grid_num_y + 1;
                 }
                 //console.log("tilemove", left, top, width, height);
-                selRect.select(left, top, width, height);
-                postToRemoteData(left, top, width, height);
-                $('#selectRect').text('[' + left + ', ' + top + ', '+width+', ' + height +' ]');
+                if(isEntityMode){
+                    //Todo：完成选取实体功能
+                } else{
+                    selRect.select(left, top, width, height);
+                    postToRemoteData(left, top, width, height);
+                    $('#selectRect').text('[' + left + ', ' + top + ', '+width+', ' + height +' ]');
+                }
             } else{
                 //补充Block模式
                 let bx = e.pageX - grid_num_x * (MTile.TileWidth * scaleIndex / 100) - $("#maindisplayline").offset().left;

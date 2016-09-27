@@ -10,16 +10,8 @@
 	<link rel="stylesheet" href="assets/css/third/toggle-switch.css">
 	<script>window.$ = window.jQuery = require('./assets/js/jquery.js');</script>
 	<script src="assets/js/jquery.mousewheel.min.js"></script>
-	<script src="script/tiles.js"> </script>
+	<script src="script/entity.js"> </script>
 	<script src="script/win.js"></script>
-	<script type="text/javascript">
-		var foo = "hello";
-		(function () {
-		    var bar = "world";
-		    alert(foo + bar);
-		})();
-		alert(foo + bar);
-	</script>
 </head>
 
 <body>
@@ -33,7 +25,7 @@
 				<label class="switch-light switch-material" onclick="">
 					<input type="checkbox" id="blockMode">
 					<strong>
-						Block编辑：
+						Block Mode：
 					</strong>
 					<span>
 						<span>开</span>
@@ -45,6 +37,19 @@
 			<div class="nav-item hide-item" id="blockInput">
 				<p class="navlist">子块数量: </p>
 				<input type="text" id="blockNum"/>
+			</div>
+			<div class="nav-item switch">
+				<label class="switch-light switch-material" onclick="">
+					<input type="checkbox" id="entitySelectMode">
+					<strong>
+						Entity选取模式：
+					</strong>
+					<span>
+						<span>开</span>
+						<span>关</span>
+						<a></a>
+					</span>
+				</label>
 			</div>
 		</div>
 		<div class="content" id="drawContent">
